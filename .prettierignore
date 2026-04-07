@@ -1,0 +1,10 @@
+.next/
+node_modules/
+.git/
+build/
+out/
+dist/
+bun.lock
+package-lock.json
+.gitignore
+.env*

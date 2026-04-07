@@ -1,7 +1,9 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+
 <!-- END:nextjs-agent-rules -->
 
 ## Quick Commands
@@ -9,10 +11,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Dev server**: `bun dev`
 - **Build**: `bun run build`
 - **Type check & lint**: `bun run lint`
+- **Format code**: `bun format`
 - **Production start**: `bun start`
-- **Cleanup after changes**: `bun run lint` (auto-fixes where possible)
+- **Cleanup after changes**: `bun format && bun run lint` (formats then auto-fixes where possible)
 
-*Note: All scripts can also be run with `npm run <script>` if npm is preferred, but Bun is the canonical package manager for this repo.*
+_Note: All scripts can also be run with `npm run <script>` if npm is preferred, but Bun is the canonical package manager for this repo._
 
 ## Package Manager: Bun
 
@@ -39,4 +42,4 @@ This repo uses **Bun** (`bun.lock` is the source of truth, not `package.json`). 
 ## When Making Changes
 
 1. Edit code as needed.
-2. Before committing or submitting PR: run `bun run lint` to auto-fix style issues and verify no type errors.
+2. Before committing or submitting PR: run `bun format && bun run lint` to format code and verify no type errors.
