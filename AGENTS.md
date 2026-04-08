@@ -32,6 +32,16 @@ This repo uses **Bun** (`bun.lock` is the source of truth, not `package.json`). 
 - **Tailwind CSS v4** with `@tailwindcss/postcss` and PostCSS. Use Tailwind utility classes in JSX (`className="..."`).
 - **TypeScript 5** in strict mode. All paths must type-check; `@/*` alias maps to repo root.
 - **React 19** with App Router (not Pages Router). Server Components by default — understand the boundary between server and client.
+- **ShadCN UI Components**: This project uses ShadCN for all UI components. See STYLE_GUIDE.md for details on component usage and styling conventions.
+
+## ShadCN UI & Theming
+
+- **Component Library**: Use ShadCN components (`@/components/ui/*`) for all UI elements instead of creating custom styled components.
+- **Color Theme**: The project uses a warm gray newspaper-inspired palette defined in `app/theme.css`. The theme supports light and dark modes using the `data-theme` attribute and `.dark` class.
+- **Theme Switching**: The `ThemeProvider` in `app/providers.tsx` manages theme state and persistence via `localStorage`. Use the `useTheme()` hook to access theme state and the `toggleTheme()` function in components.
+- **Icons**: Use Lucide icons (`lucide-react`) for all icon needs. They automatically adapt to the current color theme.
+
+See STYLE_GUIDE.md for comprehensive guidance on component usage.
 
 ## Architecture
 

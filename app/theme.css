@@ -1,0 +1,110 @@
+/* Newspaper-inspired warm gray palette */
+
+:root {
+  /* Light mode - Print-like aesthetics with warm undertones */
+  --background: #faf8f3;
+  --foreground: #2a2a2a;
+  --card: #ffffff;
+  --card-foreground: #2a2a2a;
+  --popover: #ffffff;
+  --popover-foreground: #2a2a2a;
+  --primary: #4a4a4a;
+  --primary-foreground: #faf8f3;
+  --secondary: #d4d0c8;
+  --secondary-foreground: #2a2a2a;
+  --muted: #d4d0c8;
+  --muted-foreground: #4a4a4a;
+  --accent: #4a4a4a;
+  --accent-foreground: #faf8f3;
+  --destructive: #dc2626;
+  --border: #e5e0d9;
+  --input: #f5f3f0;
+  --ring: #4a4a4a;
+  --chart-1: #6b5b46;
+  --chart-2: #8b7355;
+  --chart-3: #a89d95;
+  --chart-4: #c4bbb3;
+  --chart-5: #d4d0c8;
+  --radius: 0.625rem;
+  --sidebar: #faf8f3;
+  --sidebar-foreground: #2a2a2a;
+  --sidebar-primary: #4a4a4a;
+  --sidebar-primary-foreground: #faf8f3;
+  --sidebar-accent: #d4d0c8;
+  --sidebar-accent-foreground: #2a2a2a;
+  --sidebar-border: #e5e0d9;
+  --sidebar-ring: #4a4a4a;
+}
+
+[data-theme='dark'] {
+  /* Dark mode - Evening newspaper with warm undertones */
+  --background: #1a1815;
+  --foreground: #f5f3f0;
+  --card: #2a2620;
+  --card-foreground: #f5f3f0;
+  --popover: #2a2620;
+  --popover-foreground: #f5f3f0;
+  --primary: #a89d95;
+  --primary-foreground: #1a1815;
+  --secondary: #4a4540;
+  --secondary-foreground: #f5f3f0;
+  --muted: #4a4540;
+  --muted-foreground: #a89d95;
+  --accent: #a89d95;
+  --accent-foreground: #1a1815;
+  --destructive: #ef4444;
+  --border: #3a3530;
+  --input: #2a2620;
+  --ring: #a89d95;
+  --chart-1: #d4bfa8;
+  --chart-2: #c4a898;
+  --chart-3: #a89d95;
+  --chart-4: #8b7765;
+  --chart-5: #6b5b46;
+  --radius: 0.625rem;
+  --sidebar: #2a2620;
+  --sidebar-foreground: #f5f3f0;
+  --sidebar-primary: #a89d95;
+  --sidebar-primary-foreground: #1a1815;
+  --sidebar-accent: #4a4540;
+  --sidebar-accent-foreground: #f5f3f0;
+  --sidebar-border: #3a3530;
+  --sidebar-ring: #a89d95;
+}
+
+/* Fallback for .dark class (Tailwind's default dark mode) */
+.dark {
+  /* Evening newspaper with warm undertones */
+  --background: #1a1815;
+  --foreground: #f5f3f0;
+  --card: #2a2620;
+  --card-foreground: #f5f3f0;
+  --popover: #2a2620;
+  --popover-foreground: #f5f3f0;
+  --primary: #a89d95;
+  --primary-foreground: #1a1815;
+  --secondary: #4a4540;
+  --secondary-foreground: #f5f3f0;
+  --muted: #4a4540;
+  --muted-foreground: #a89d95;
+  --accent: #a89d95;
+  --accent-foreground: #1a1815;
+  --destructive: #ef4444;
+  --border: #3a3530;
+  --input: #2a2620;
+  --ring: #a89d95;
+  --chart-1: #d4bfa8;
+  --chart-2: #c4a898;
+  --chart-3: #a89d95;
+  --chart-4: #8b7765;
+  --chart-5: #6b5b46;
+  --radius: 0.625rem;
+  --sidebar: #2a2620;
+  --sidebar-foreground: #f5f3f0;
+  --sidebar-primary: #a89d95;
+  --sidebar-primary-foreground: #1a1815;
+  --sidebar-accent: #4a4540;
+  --sidebar-accent-foreground: #f5f3f0;
+  --sidebar-border: #3a3530;
+  --sidebar-ring: #a89d95;
+}
