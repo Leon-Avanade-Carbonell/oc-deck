@@ -3,6 +3,9 @@
 import dynamic from 'next/dynamic';
 import { BasemapSelector } from '@/components/map/BasemapSelector';
 import { CurrentLocationLayer } from '@/components/map/layers/CurrentLocationLayer';
+import { SampleHexLayer } from '@/components/map/layers/sample-HexLayer';
+import { SampleHexTooltip } from '@/components/map/sample-HexTooltip';
+import { SampleHexToggle } from '@/components/map/sample-HexToggle';
 import { useUserLocation } from '@/lib/hooks/useUserLocation';
 
 // Skip SSR for BaseMap — MapLibre GL uses browser APIs (WebGL, ResizeObserver,
@@ -19,12 +22,21 @@ export default function MapPage() {
     <main className="relative flex-1 min-h-0 overflow-hidden w-full">
       <BaseMap>
         <CurrentLocationLayer />
+        <SampleHexLayer />
       </BaseMap>
 
       {/* Floating basemap selector — top-right corner over the map */}
       <div className="absolute top-4 right-4 z-10">
         <BasemapSelector />
       </div>
+
+      {/* Floating sample hex layer toggle — top-right, next to basemap selector */}
+      <div className="absolute top-4 right-56 z-10">
+        <SampleHexToggle />
+      </div>
+
+      {/* Hex tooltip overlay */}
+      <SampleHexTooltip />
     </main>
   );
 }
