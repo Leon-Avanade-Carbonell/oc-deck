@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect, useCallback } from 'react';
+import { useMemo, useEffect, useCallback, useRef } from 'react';
 import { PolygonLayer } from '@deck.gl/layers';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { mapInstanceAtom } from '@/lib/atoms/map';
@@ -13,20 +13,20 @@ const LAYER_ID = 'hex-sample';
 
 /**
  * Map population value to color and opacity
- * Population 0 → Light gray (#e0e0e0, 30% opacity)
- * Population 100k → Dark red (#d62728, 100% opacity)
+ * Population 0 → Light gray (#e0e0e0, 70% opacity)
+ * Population 100k → Green (#22c55e, 70% opacity)
  */
 function getColorAndOpacity(population: number): [number, number, number, number] {
   const maxPopulation = 1000;
   const normalizedPop = Math.min(population / maxPopulation, 1);
 
-  // Linear interpolation from gray to red
-  const r = Math.round(224 + (214 - 224) * normalizedPop); // 224 → 214
-  const g = Math.round(224 + (39 - 224) * normalizedPop); // 224 → 39
-  const b = Math.round(224 + (40 - 224) * normalizedPop); // 224 → 40
+  // Linear interpolation from light gray to green
+  const r = Math.round(224 + (34 - 224) * normalizedPop); // 224 → 34
+  const g = Math.round(224 + (197 - 224) * normalizedPop); // 224 → 197
+  const b = Math.round(224 + (94 - 224) * normalizedPop); // 224 → 94
 
-  // Opacity: 30% → 100%
-  const opacity = Math.round(76 + (255 - 76) * normalizedPop);
+  // Opacity: constant 70%
+  const opacity = 178; // 70% of 255
 
   return [r, g, b, opacity];
 }
@@ -47,6 +47,9 @@ export function SampleHexLayer() {
   const layerVisible = useAtomValue(sampleHexLayerVisibleAtom);
   const overlay = useDeckGLOverlay();
 
+  // Debounce timeout ref to prevent excessive hex regeneration during zoom/pan
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Function to get current map bounds
   const getMapBounds = useCallback((): [number, number, number, number] | null => {
     if (!mapInstance) return null;
@@ -59,15 +62,23 @@ export function SampleHexLayer() {
     }
   }, [mapInstance]);
 
-  // Regenerate hex cells when zoom or pan changes
+  // Regenerate hex cells when zoom or pan changes (with debounce)
   useEffect(() => {
     if (!mapInstance) return;
 
     const handleMapChange = () => {
-      const zoom = mapInstance.getZoom();
-      const bounds = getMapBounds();
-      const newHexCells = generateHexCells(zoom, bounds);
-      setHexData(newHexCells);
+      // Clear any pending update
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+
+      // Debounce: only update after 150ms of inactivity
+      debounceTimeoutRef.current = setTimeout(() => {
+        const zoom = mapInstance.getZoom();
+        const bounds = getMapBounds();
+        const newHexCells = generateHexCells(zoom, bounds);
+        setHexData(newHexCells);
+      }, 150);
     };
 
     // Listen to both zoom and move (pan) events
@@ -80,6 +91,9 @@ export function SampleHexLayer() {
     return () => {
       mapInstance.off('zoom', handleMapChange);
       mapInstance.off('move', handleMapChange);
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
   }, [mapInstance, setHexData, getMapBounds]);
 
