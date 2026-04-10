@@ -1,12 +1,12 @@
 'use client';
 
 import { useAtom } from 'jotai';
-import { Hexagon } from 'lucide-react';
+import { Grid3X3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { sampleHexLayerVisibleAtom } from '@/lib/atoms/sample-hex';
 
 /**
- * SampleHexToggle renders a button to toggle the visibility of the sample hex layer.
+ * SampleHexToggle renders an icon button to toggle the visibility of the sample hex layer.
  *
  * Reads from and writes to `sampleHexLayerVisibleAtom`.
  *
@@ -23,12 +23,13 @@ export function SampleHexToggle() {
   return (
     <Button
       variant={visible ? 'default' : 'outline'}
-      size="sm"
+      size="icon"
       onClick={() => setVisible(!visible)}
       className="bg-background/90 backdrop-blur-sm"
+      title={visible ? 'Hide Hex Sample' : 'Show Hex Sample'}
+      aria-label={visible ? 'Hide Hex Sample' : 'Show Hex Sample'}
     >
-      <Hexagon className="mr-2 h-4 w-4" />
-      {visible ? 'Hide' : 'Show'} Hex Sample
+      <Grid3X3 className="h-4 w-4" />
     </Button>
   );
 }
