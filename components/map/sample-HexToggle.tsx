@@ -1,7 +1,7 @@
 'use client';
 
 import { useAtom } from 'jotai';
-import { Grid3X3 } from 'lucide-react';
+import { Hexagon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { sampleHexLayerVisibleAtom } from '@/lib/atoms/sample-hex';
 
@@ -29,7 +29,7 @@ export function SampleHexToggle() {
       title={visible ? 'Hide Hex Sample' : 'Show Hex Sample'}
       aria-label={visible ? 'Hide Hex Sample' : 'Show Hex Sample'}
     >
-      <Grid3X3 className="h-4 w-4" />
+      <Hexagon className="h-4 w-4" />
     </Button>
   );
 }
