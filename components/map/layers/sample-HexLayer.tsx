@@ -122,12 +122,13 @@ export function SampleHexLayer() {
     [overlay, setSelectedHex]
   );
 
-  // Create or recreate the PolygonLayer when hexData changes
-  // This ensures layer always has the latest data without mutation errors
+  // Create a single layer instance with hexData in dependency
+  // When invisible, pass empty data to avoid WebGL recreation issues
   const layer = useMemo(() => {
+    const dataToRender = layerVisible ? hexData : [];
     return new PolygonLayer({
       id: LAYER_ID,
-      data: hexData,
+      data: dataToRender,
       getPolygon: (d) => d.geometry,
       getFillColor: (d) => getColorAndOpacity(d.population),
       getLineColor: [180, 180, 180, 200],
@@ -136,23 +137,23 @@ export function SampleHexLayer() {
       autoHighlight: true,
       highlightColor: [255, 200, 0, 100],
       updateTriggers: {
-        getFillColor: hexData,
-        getPolygon: hexData
+        getFillColor: dataToRender,
+        getPolygon: dataToRender
       }
     });
-  }, [hexData]);
+  }, [hexData, layerVisible]);
 
-  // Register layer with useSmartLayer
+  // Register layer with useSmartLayer - always register it (don't filter by visibility)
   const { setVisible } = useSmartLayer({
     id: LAYER_ID,
     layer,
     label: 'Hex Sample'
   });
 
-  // Wire up visibility atom to layer visibility
+  // Sync setVisible calls but don't need to wire up visibility since we handle it via layer data
   useEffect(() => {
-    setVisible(layerVisible);
-  }, [layerVisible, setVisible]);
+    setVisible(true); // Always render the layer, but with empty data when invisible
+  }, [setVisible]);
 
   // Set up click handler on the overlay when it's ready
   useEffect(() => {
