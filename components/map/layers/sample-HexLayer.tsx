@@ -49,6 +49,8 @@ export function SampleHexLayer() {
 
   // Debounce timeout ref to prevent excessive hex regeneration during zoom/pan
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Layer instance ref to prevent recreation when data changes
+  const layerRef = useRef<PolygonLayer | null>(null);
 
   // Function to get current map bounds
   const getMapBounds = useCallback((): [number, number, number, number] | null => {
@@ -123,9 +125,16 @@ export function SampleHexLayer() {
   );
 
   // Create the PolygonLayer with stable configuration
-  // Keep the same layer instance across renders by only updating via updateTriggers
+  // Use a ref to keep the same layer instance across renders, only updating data
   // This prevents WebGL state corruption when visibility toggles
   const layer = useMemo(() => {
+    // If we already have a layer instance, just return it
+    // The data will be updated via useEffect below
+    if (layerRef.current) {
+      return layerRef.current;
+    }
+
+    // Create layer only once
     const newLayer = new PolygonLayer({
       id: LAYER_ID,
       data: hexData,
@@ -141,8 +150,9 @@ export function SampleHexLayer() {
         getPolygon: hexData
       }
     });
+    layerRef.current = newLayer;
     return newLayer;
-  }, [hexData]);
+  }, []);
 
   // Register layer with useSmartLayer
   const { setVisible } = useSmartLayer({
@@ -155,6 +165,18 @@ export function SampleHexLayer() {
   useEffect(() => {
     setVisible(layerVisible);
   }, [layerVisible, setVisible]);
+
+  // Update layer data when hexData changes
+  // This keeps the layer instance stable while updating its data
+  useEffect(() => {
+    if (layerRef.current) {
+      layerRef.current.props.data = hexData;
+      layerRef.current.props.updateTriggers = {
+        getFillColor: hexData,
+        getPolygon: hexData
+      };
+    }
+  }, [hexData]);
 
   // Set up click handler on the overlay when it's ready
   useEffect(() => {
