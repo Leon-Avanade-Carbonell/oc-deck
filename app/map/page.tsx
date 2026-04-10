@@ -2,10 +2,10 @@
 
 import dynamic from 'next/dynamic';
 import { BasemapSelector } from '@/components/map/BasemapSelector';
+import { SampleClimateToggle } from '@/components/map/toggles/sample-climate-toggle';
 import { CurrentLocationLayer } from '@/components/map/layers/CurrentLocationLayer';
-import { SampleHexLayer } from '@/components/map/layers/sample-HexLayer';
-import { SampleHexTooltip } from '@/components/map/sample-HexTooltip';
-import { SampleHexToggle } from '@/components/map/sample-HexToggle';
+import { SampleClimateLayer } from '@/components/map/layers/sample-climate';
+import { SampleClimateTimeSlider } from '@/components/map/climate/sample-climate-time-slider';
 import { useUserLocation } from '@/lib/hooks/useUserLocation';
 
 // Skip SSR for BaseMap — MapLibre GL uses browser APIs (WebGL, ResizeObserver,
@@ -22,21 +22,17 @@ export default function MapPage() {
     <main className="relative flex-1 min-h-0 overflow-hidden w-full">
       <BaseMap>
         <CurrentLocationLayer />
-        <SampleHexLayer />
+        <SampleClimateLayer />
       </BaseMap>
 
-      {/* Floating basemap selector — top-right corner over the map */}
-      <div className="absolute top-4 right-4 z-10">
+      {/* Floating controls — top-right corner over the map */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-3">
         <BasemapSelector />
+        <SampleClimateToggle />
       </div>
 
-      {/* Floating sample hex layer toggle — middle-right over the map */}
-      <div className="absolute top-1/2 right-4 z-10 -translate-y-1/2">
-        <SampleHexToggle />
-      </div>
-
-      {/* Hex tooltip overlay */}
-      <SampleHexTooltip />
+      {/* Climate data time slider — center-bottom of map */}
+      <SampleClimateTimeSlider />
     </main>
   );
 }

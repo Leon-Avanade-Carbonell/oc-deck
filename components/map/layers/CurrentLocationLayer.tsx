@@ -57,10 +57,10 @@ export function CurrentLocationLayer() {
         id: LAYER_ID,
         data,
         getPosition: (d: { position: [number, number] }) => d.position,
-        getRadius: 80,
-        radiusUnits: 'meters',
-        getFillColor: [59, 130, 246, 220], // blue-500 with slight transparency
-        getLineColor: [255, 255, 255, 255],
+        getRadius: 5,
+        radiusUnits: 'pixels',
+        getFillColor: [251, 146, 60, 220], // orange-400 with slight transparency
+        getLineColor: [240, 81, 0, 255], // sunset-orange (#f05100)
         stroked: true,
         lineWidthMinPixels: 2,
         updateTriggers: {
