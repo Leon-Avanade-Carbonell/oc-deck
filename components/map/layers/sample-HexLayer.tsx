@@ -122,25 +122,27 @@ export function SampleHexLayer() {
     [overlay, setSelectedHex]
   );
 
-  // Create the PolygonLayer
-  const layer = useMemo(
-    () =>
-      new PolygonLayer({
-        id: LAYER_ID,
-        data: hexData,
-        getPolygon: (d) => d.geometry,
-        getFillColor: (d) => getColorAndOpacity(d.population),
-        getLineColor: [180, 180, 180, 200],
-        lineWidthMinPixels: 1,
-        pickable: true,
-        autoHighlight: true,
-        highlightColor: [255, 200, 0, 100],
-        updateTriggers: {
-          getFillColor: hexData
-        }
-      }),
-    [hexData]
-  );
+  // Create the PolygonLayer with stable configuration
+  // Keep the same layer instance across renders by only updating via updateTriggers
+  // This prevents WebGL state corruption when visibility toggles
+  const layer = useMemo(() => {
+    const newLayer = new PolygonLayer({
+      id: LAYER_ID,
+      data: hexData,
+      getPolygon: (d) => d.geometry,
+      getFillColor: (d) => getColorAndOpacity(d.population),
+      getLineColor: [180, 180, 180, 200],
+      lineWidthMinPixels: 1,
+      pickable: true,
+      autoHighlight: true,
+      highlightColor: [255, 200, 0, 100],
+      updateTriggers: {
+        getFillColor: hexData,
+        getPolygon: hexData
+      }
+    });
+    return newLayer;
+  }, [hexData]);
 
   // Register layer with useSmartLayer
   const { setVisible } = useSmartLayer({

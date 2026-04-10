@@ -83,8 +83,13 @@ export function BaseMap({ children, initialViewport, controls = DEFAULT_CONTROLS
   const mapStyle = BASETILES[basemapId].url;
   const viewport = { ...DEFAULT_VIEWPORT, ...initialViewport };
 
-  // Filter to only visible layers and extract the DeckGL layer instances
-  const visibleLayers = layers.filter((l) => l.visible).map((l) => l.layer);
+  // Pass all layers to DeckGL, with visible property set appropriately
+  // This avoids layer recreation/destruction which can corrupt WebGL state
+  const deckLayers = layers.map((l) => {
+    // Set the visible property on the layer object
+    (l.layer as any).visible = l.visible;
+    return l.layer;
+  });
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -104,7 +109,7 @@ export function BaseMap({ children, initialViewport, controls = DEFAULT_CONTROLS
         pitchWithRotate={controls?.pitch ?? false}
         touchZoomRotate={controls?.zoom ?? true}
       >
-        <DeckGLOverlay layers={visibleLayers} />
+        <DeckGLOverlay layers={deckLayers} />
         <MapContent>{children}</MapContent>
       </Map>
     </div>
