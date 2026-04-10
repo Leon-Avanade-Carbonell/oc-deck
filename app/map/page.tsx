@@ -26,9 +26,13 @@ export default function MapPage() {
       </BaseMap>
 
       {/* Floating basemap selector — top-right corner over the map */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-        <SampleHexToggle />
+      <div className="absolute top-4 right-4 z-10">
         <BasemapSelector />
+      </div>
+
+      {/* Floating sample hex layer toggle — top-right, above basemap selector */}
+      <div className="absolute top-4 right-20 z-10">
+        <SampleHexToggle />
       </div>
 
       {/* Hex tooltip overlay */}

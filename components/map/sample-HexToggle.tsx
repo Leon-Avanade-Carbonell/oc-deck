@@ -22,10 +22,14 @@ export function SampleHexToggle() {
 
   return (
     <Button
-      variant={visible ? 'default' : 'outline'}
+      variant="outline"
       size="icon"
       onClick={() => setVisible(!visible)}
-      className="bg-background/90 backdrop-blur-sm"
+      className={`backdrop-blur-sm transition-colors ${
+        visible
+          ? 'bg-orange-500 hover:bg-orange-600 text-white border-orange-600'
+          : 'bg-background/90'
+      }`}
       title={visible ? 'Hide Hex Sample' : 'Show Hex Sample'}
       aria-label={visible ? 'Hide Hex Sample' : 'Show Hex Sample'}
     >
