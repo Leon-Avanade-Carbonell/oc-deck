@@ -3,7 +3,7 @@ import { atom } from 'jotai';
 export interface HexCell {
   id: string;
   population: number;
-  geometry: [number, number][]; // GeoJSON coordinates [lon, lat][]
+  geometry: [number, number][][]; // Array of rings for PolygonLayer: [[[lon, lat], ...]]
 }
 
 export interface SelectedHex {

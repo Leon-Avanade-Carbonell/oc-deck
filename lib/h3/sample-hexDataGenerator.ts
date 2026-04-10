@@ -86,8 +86,9 @@ export function generateHexCells(zoom: number, viewportBounds?: [number, number,
     })
     .map((hexId) => {
       const boundary = h3.cellToBoundary(hexId, true); // true for GeoJSON format
-      // boundary is already [[lon, lat], [lon, lat], ...]
-      const geometry = boundary as [number, number][];
+      // boundary is [[lon, lat], [lon, lat], ...]
+      // PolygonLayer expects geometry to be an array of rings: [[[lon, lat], ...]]
+      const geometry = [boundary as [number, number][]];
 
       return {
         id: hexId,
