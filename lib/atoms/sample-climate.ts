@@ -57,15 +57,3 @@ export const sampleClimateLoadingAtom = atom(false);
  * Stores error message if API fetch fails
  */
 export const sampleClimateErrorAtom = atom<string | null>(null);
-
-/**
- * Previous time slice data for smooth color interpolation during transitions
- * When time changes, this holds the old data while new data loads
- */
-export const sampleClimateDataPreviousAtom = atom<[number, number, number][]>([]);
-
-/**
- * Animation progress (0 = old colors, 1 = new colors)
- * Used to smoothly interpolate between color states
- */
-export const sampleClimateAnimationProgressAtom = atom<number>(1);
