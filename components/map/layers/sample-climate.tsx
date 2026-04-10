@@ -1,7 +1,7 @@
 'use client';
 
 import { useAtom } from 'jotai';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { GridCellLayer } from '@deck.gl/layers';
 import { useSmartLayer } from '@/lib/hooks/useSmartLayer';
 
@@ -11,21 +11,26 @@ import {
   sampleClimateCurrentVariableAtom,
   sampleClimateCurrentTimeAtom,
   sampleClimateDataCacheAtom,
+  sampleClimateDataPreviousAtom,
+  sampleClimateAnimationProgressAtom,
 } from '@/lib/atoms/sample-climate';
 import { useClimateData, useClimateDataForTime } from '@/lib/hooks/useClimateData';
 
 /**
  * SampleClimateLayer
  *
- * Renders gridded climate data as a GridCellLayer with color intensity.
+ * Renders gridded climate data as a GridCellLayer with smooth color interpolation.
  * GridCellLayer aggregates data into hexagonal cells, making patterns much more visible.
  * Each cell's color represents the aggregated value within that cell.
+ *
+ * Animation: When switching time slices, colors smoothly interpolate from old to new
+ * values over 400ms using the animationProgress atom.
  *
  * Architecture:
  * - useClimateData() discovers variables and available times
  * - useClimateDataForTime() fetches and caches grid data on-demand
  * - Layer reads from cache and only re-renders when data actually changes
- * - Time slider just changes an atom; no flickering during loads
+ * - Animation blends old/new values using requestAnimationFrame
  *
  * Data source: Climate API (grid endpoint with columnar format)
  */
@@ -38,51 +43,95 @@ export function SampleClimateLayer() {
   const [currentVariable] = useAtom(sampleClimateCurrentVariableAtom);
   const [currentTime] = useAtom(sampleClimateCurrentTimeAtom);
   const [cache] = useAtom(sampleClimateDataCacheAtom);
+  const [previousData, setPreviousData] = useAtom(sampleClimateDataPreviousAtom);
+  const [animationProgress, setAnimationProgress] = useAtom(sampleClimateAnimationProgressAtom);
+
+  // Refs for animation
+  const animationDurationRef = useRef(400); // 400ms transition
+  const previousTimeRef = useRef<string>('');
 
   // Trigger data fetch for current time (if not already cached)
   useClimateDataForTime(currentVariable, currentTime);
 
   // Get data from cache for current time
-  // Memoize to prevent dependency chain issues
   const cachedData = useMemo(() => {
     const cacheKey = `${currentVariable}/${currentTime}`;
     return cache.get(cacheKey) || [];
   }, [cache, currentVariable, currentTime]);
 
-  // Sync cached data to display atom
-  // This ensures the layer always renders the latest cached data
-  useMemo(() => {
-    setData(cachedData);
-  }, [cachedData, setData]);
+  // When time changes, start animation
+  useEffect(() => {
+    if (currentTime === previousTimeRef.current) return;
 
-  // Calculate min/max values for color intensity scaling
-  // Note: Using iteration instead of Math.min(...values) to avoid stack overflow
-  // with large climate data grids (hundreds of thousands of points)
+    // Save previous data and start animation
+    if (cachedData.length > 0) {
+      setPreviousData(previousData.length > 0 ? previousData : cachedData);
+      setAnimationProgress(0); // Start animation
+    }
+
+    previousTimeRef.current = currentTime;
+  }, [currentTime, cachedData, previousData, setPreviousData, setAnimationProgress]);
+
+  // Animate progress from 0 to 1 over 400ms
+  useEffect(() => {
+    if (animationProgress >= 1) {
+      setData(cachedData);
+      return;
+    }
+
+    let frameId: number;
+    const startTime = Date.now();
+
+    const tick = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / animationDurationRef.current, 1);
+      setAnimationProgress(progress);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(tick);
+      } else {
+        // Animation complete
+        setData(cachedData);
+        setPreviousData(cachedData);
+      }
+    };
+
+    frameId = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [animationProgress, cachedData, setData, setPreviousData, setAnimationProgress]);
+
+  // Calculate min/max values from both current and previous data for consistent color scaling
   const { minValue, maxValue } = useMemo(() => {
-    if (cachedData.length === 0) {
+    const allData = [...cachedData, ...previousData];
+    if (allData.length === 0) {
       return { minValue: 0, maxValue: 1 };
     }
 
-    let min = cachedData[0][2];
-    let max = cachedData[0][2];
+    let min = allData[0][2];
+    let max = allData[0][2];
 
-    for (let i = 1; i < cachedData.length; i++) {
-      const value = cachedData[i][2];
+    for (let i = 1; i < allData.length; i++) {
+      const value = allData[i][2];
       if (value < min) min = value;
       if (value > max) max = value;
     }
 
     return {
       minValue: min,
-      maxValue: max === min ? max + 1 : max, // Ensure min !== max
+      maxValue: max === min ? max + 1 : max,
     };
-  }, [cachedData]);
+  }, [cachedData, previousData]);
 
-  // Generate color from value using interpolation
-  const getColorForValue = useMemo(
-    () => (value: number): [number, number, number, number] => {
-      const normalized = Math.min(Math.max((value - minValue) / (maxValue - minValue), 0), 1);
+  // Helper: normalize value to 0-1 range
+  const normalizeValue = useCallback(
+    (value: number) => Math.min(Math.max((value - minValue) / (maxValue - minValue), 0), 1),
+    [minValue, maxValue]
+  );
 
+  // Helper: convert normalized value to RGBA color using gradient
+  const valueToColor = useCallback(
+    (normalized: number): [number, number, number, number] => {
       // Color gradient: blue → green → yellow → orange → red
       if (normalized < 0.2) {
         // Blue to green
@@ -122,7 +171,27 @@ export function SampleClimateLayer() {
         ];
       }
     },
-    [minValue, maxValue]
+    []
+  );
+
+  // Generate color from data point with animation interpolation
+  const getColorForValue = useMemo(
+    () => (d: [number, number, number]) => {
+      // Find corresponding previous value (by matching lat/lon)
+      let prevValue = d[2]; // Default to current value
+      if (animationProgress < 1 && previousData.length > 0) {
+        const matchingPrev = previousData.find((p) => p[0] === d[0] && p[1] === d[1]);
+        if (matchingPrev) {
+          prevValue = matchingPrev[2];
+        }
+      }
+
+      // Interpolate value during animation: blend from prevValue to current
+      const displayValue = prevValue * (1 - animationProgress) + d[2] * animationProgress;
+      const normalized = normalizeValue(displayValue);
+      return valueToColor(normalized);
+    },
+    [animationProgress, previousData, normalizeValue, valueToColor]
   );
 
   const layer = useMemo(
@@ -132,7 +201,7 @@ export function SampleClimateLayer() {
         data: visible ? cachedData : [],
         getPosition: (d: [number, number, number]) => [d[0], d[1]],
         getWeight: (d: [number, number, number]) => d[2],
-        getFillColor: (d: [number, number, number]) => getColorForValue(d[2]),
+        getFillColor: (d: [number, number, number]) => getColorForValue(d),
         getLineColor: [200, 200, 200, 100], // Light gray cell borders
         cellSize: 10000, // ~10km cells (in meters, approximate)
         lineWidthMinPixels: 0.5,
@@ -141,10 +210,10 @@ export function SampleClimateLayer() {
         filled: true,
         extruded: false,
         updateTriggers: {
-          getFillColor: [minValue, maxValue],
+          getFillColor: [animationProgress, minValue, maxValue],
         },
       }),
-    [cachedData, visible, minValue, maxValue, getColorForValue]
+    [cachedData, visible, animationProgress, minValue, maxValue, getColorForValue]
   );
 
   useSmartLayer({
