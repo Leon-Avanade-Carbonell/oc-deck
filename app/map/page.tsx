@@ -30,8 +30,8 @@ export default function MapPage() {
         <BasemapSelector />
       </div>
 
-      {/* Floating sample hex layer toggle — top-right, above basemap selector */}
-      <div className="absolute top-4 right-20 z-10">
+      {/* Floating sample hex layer toggle — middle-right over the map */}
+      <div className="absolute top-1/2 right-4 z-10 -translate-y-1/2">
         <SampleHexToggle />
       </div>
 
