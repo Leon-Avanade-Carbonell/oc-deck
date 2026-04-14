@@ -105,12 +105,11 @@ export function SampleClimateMvtLayer() {
     () =>
       new BitmapLayer({
         id: 'sample-climate-mvt',
-        image: decodedImageUrl || '', // Will be empty string if not decoded yet
+        image: decodedImageUrl, // Can be undefined, which BitmapLayer should handle gracefully
         bounds,
         pickable: true,
         opacity: 0.7,
         desaturate: 0,
-        transparentColor: [0, 0, 0, 0],
         onClick: (info) => {
           // Extract pixel value from the decoded image
           if (info.color) {
@@ -134,6 +133,7 @@ export function SampleClimateMvtLayer() {
     [decodedImageUrl, bounds, setHoveredValue]
   );
 
+  // Only register layer if we have a valid layer instance
   const { setVisible: setLayerVisible } = useSmartLayer({
     id: 'sample-climate-mvt',
     layer,
