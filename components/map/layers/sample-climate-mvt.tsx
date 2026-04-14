@@ -1,6 +1,6 @@
 'use client';
 
-import { useAtom, useSetAtom } from 'jotai';
+import { useAtom } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 import { BitmapLayer } from '@deck.gl/layers';
 import { useSmartLayer } from '@/lib/hooks/useSmartLayer';
@@ -70,9 +70,11 @@ export function SampleClimateMvtLayer() {
 
         // Decode GeoTIFF to ImageBitmap
         const bitmap = await decodeGeoTIFF(arrayBuffer, bandMode);
+        console.log('[SampleClimateMvtLayer] GeoTIFF decoded successfully, size:', bitmap.width, 'x', bitmap.height);
 
         // Convert ImageBitmap to data URL for BitmapLayer
         const dataUrl = await imageBitmapToDataUrl(bitmap);
+        console.log('[SampleClimateMvtLayer] Data URL created, length:', dataUrl.length);
 
         if (isMounted) {
           setDecodedImageUrl(dataUrl);
@@ -157,5 +159,6 @@ export function SampleClimateMvtLayer() {
     console.error('[SampleClimateMvtLayer] Decode error:', decodeError);
   }
 
+  // Layer component (renders via DeckGL, not DOM)
   return null;
 }
