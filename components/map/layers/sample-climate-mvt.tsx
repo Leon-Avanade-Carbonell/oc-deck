@@ -1,6 +1,6 @@
 'use client';
 
-import { useAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import { useEffect, useMemo, useState } from 'react';
 import { BitmapLayer } from '@deck.gl/layers';
 import { useSmartLayer } from '@/lib/hooks/useSmartLayer';
@@ -11,7 +11,8 @@ import { useGeoTIFFWorker } from '@/lib/hooks/useGeoTIFFWorker';
 import {
   sampleClimateMvtImageUrlAtom,
   sampleClimateMvtHoveredValueAtom,
-  sampleClimateMvtVisibleAtom
+  sampleClimateMvtVisibleAtom,
+  sampleClimateMvtIsDecodingAtom
 } from '@/lib/atoms/sample-climate-mvt';
 
 /**
@@ -20,62 +21,61 @@ import {
  * Renders Cloud-Optimized GeoTIFF (COG) climate data from the climate-mvt API.
  *
  * Process:
- * 1. Fetch GeoTIFF from backend (Web Mercator, EPSG:3857)
+ * 1. Fetch GeoTIFF from backend (WGS84, EPSG:4326)
  * 2. Send to Web Worker for decoding (off main thread)
- * 3. Worker extracts ImageBitmap and bounds metadata
+ * 3. Worker extracts ImageBitmap and WGS84 bounds via image.getBoundingBox()
  * 4. Convert ImageBitmap to PNG data URL (format BitmapLayer supports)
- * 5. Pass image URL + bounds to BitmapLayer
+ * 5. Pass image URL + WGS84 bounds to BitmapLayer
  *
  * Backend provides:
- * - GeoTIFFs in Web Mercator projection (EPSG:3857)
+ * - GeoTIFFs reprojected to WGS84 (EPSG:4326)
  * - Embedded georeferencing (ModelPixelScale + ModelTiepoint)
- * - Metadata tags (CRS, BOUNDS_WGS84)
  * - Alpha channel for NaN transparency support
  *
  * Data source: `/api/climate-mvt/{variable}/{time}/z{zoom}.tif`
  * Progressive zoom levels: z0 (256px) to z5 (8192px)
+ *
+ * Play coordination:
+ * - sampleClimateMvtIsDecodingAtom is written here and read by the time picker
+ * - The time picker advances to the next step only after this atom becomes false,
+ *   ensuring every frame is actually rendered before moving on.
  */
 export function SampleClimateMvtLayer() {
   const isHydrated = useHydrationAware();
   const [imageUrl] = useAtom(sampleClimateMvtImageUrlAtom);
   const [, setHoveredValue] = useAtom(sampleClimateMvtHoveredValueAtom);
   const [visible] = useAtom(sampleClimateMvtVisibleAtom);
-  const { decode: decodeGeoTIFF } = useGeoTIFFWorker();
+  const setIsDecoding = useSetAtom(sampleClimateMvtIsDecodingAtom);
+  const { decode: decodeGeoTIFF, cancelAll: cancelWorkerRequests } = useGeoTIFFWorker();
 
   // State for decoded image and bounds
   const [decodedImageUrl, setDecodedImageUrl] = useState<string | null>(null);
   const [boundsFromGeoTIFF, setBoundsFromGeoTIFF] = useState<[number, number, number, number] | null>(null);
   const [decodeError, setDecodeError] = useState<string | null>(null);
-  const [isDecoding, setIsDecoding] = useState(false);
 
   // Decode GeoTIFF when URL changes
   useEffect(() => {
     if (!isHydrated || !imageUrl) {
       setDecodedImageUrl(null);
       setBoundsFromGeoTIFF(null);
+      setIsDecoding(false);
       return;
     }
 
     let isMounted = true;
+    const abortController = new AbortController();
 
     const decodeImage = async () => {
       try {
         setDecodeError(null);
         setIsDecoding(true);
 
-        // Fetch the GeoTIFF file
+        // Fetch the GeoTIFF file (abort signal allows cancellation when URL changes)
         console.log('[SampleClimateMvtLayer] Fetching GeoTIFF from:', imageUrl);
-        const response = await fetch(imageUrl);
+        const response = await fetch(imageUrl, { signal: abortController.signal });
         if (!response.ok) {
           throw new Error(`Failed to fetch GeoTIFF: ${response.status} ${response.statusText}`);
         }
-
-        console.log(
-          '[SampleClimateMvtLayer] Response received, Content-Type:',
-          response.headers.get('content-type'),
-          'Content-Length:',
-          response.headers.get('content-length')
-        );
 
         const arrayBuffer = await response.arrayBuffer();
         console.log('[SampleClimateMvtLayer] ArrayBuffer created, size:', arrayBuffer.byteLength, 'bytes');
@@ -83,15 +83,7 @@ export function SampleClimateMvtLayer() {
         // Verify we have a valid GeoTIFF (should start with TIFF header: "II*" or "MM*")
         const headerView = new Uint8Array(arrayBuffer, 0, 4);
         const header = String.fromCharCode(...headerView);
-        console.log(
-          '[SampleClimateMvtLayer] TIFF header bytes:',
-          header.charCodeAt(0),
-          header.charCodeAt(1),
-          header.charCodeAt(2),
-          header.charCodeAt(3)
-        );
         const isValidTiff = header.startsWith('II*') || header.startsWith('MM*');
-        console.log('[SampleClimateMvtLayer] Is valid TIFF header:', isValidTiff);
 
         if (!isValidTiff) {
           throw new Error(
@@ -115,19 +107,24 @@ export function SampleClimateMvtLayer() {
 
         // Convert ImageBitmap to PNG data URL (format BitmapLayer supports)
         const dataUrl = await imageBitmapToDataUrl(bitmap);
+        bitmap.close(); // Free memory
 
         if (isMounted) {
           setDecodedImageUrl(dataUrl);
           setBoundsFromGeoTIFF(bounds);
         }
-
-        bitmap.close(); // Free memory
       } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          // Fetch was aborted because URL changed — expected during playback, not an error
+          return;
+        }
+        if (error instanceof Error && error.message === 'Decode cancelled') {
+          // Worker request was cancelled by cancelAll() — expected during URL changes
+          return;
+        }
+
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
         console.error('[SampleClimateMvtLayer] Decode error:', errorMsg);
-        if (error instanceof Error) {
-          console.error('[SampleClimateMvtLayer] Stack:', error.stack);
-        }
 
         if (isMounted) {
           setDecodeError(errorMsg);
@@ -143,8 +140,10 @@ export function SampleClimateMvtLayer() {
 
     return () => {
       isMounted = false;
+      abortController.abort(); // cancel in-flight fetch
+      cancelWorkerRequests(); // reject any pending worker promises
     };
-  }, [imageUrl, isHydrated, decodeGeoTIFF]);
+  }, [imageUrl, isHydrated, decodeGeoTIFF, cancelWorkerRequests, setIsDecoding]);
 
   // Create BitmapLayer with decoded image and extracted bounds
   // When image is not ready yet, create a layer with default values that won't render
@@ -154,7 +153,9 @@ export function SampleClimateMvtLayer() {
       image: decodedImageUrl,
       bounds: boundsFromGeoTIFF ?? ([1, 0, 0, 1] as [number, number, number, number]),
       pickable: true,
-      opacity: 0.5,
+      opacity: 1.0,
+      tintColor: [255, 255, 255],
+      desaturate: 0,
       onClick: (info) => {
         if (info.color) {
           const pixelValue = info.color[0];
@@ -194,10 +195,6 @@ export function SampleClimateMvtLayer() {
 
   if (decodeError) {
     console.error('[SampleClimateMvtLayer] Decode error:', decodeError);
-  }
-
-  if (isDecoding) {
-    console.log('[SampleClimateMvtLayer] Decoding in progress...');
   }
 
   // Layer component (renders via DeckGL, not DOM)

@@ -1,41 +1,72 @@
 'use client';
 
-import { useAtom } from 'jotai';
-import { useMemo } from 'react';
+import { useAtom, useAtomValue } from 'jotai';
+import { useMemo, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
 import { useHydrationAware } from '@/lib/hooks/useHydrationAware';
 
-import { sampleClimateMvtTimeAtom, sampleClimateMvtAvailableTimesAtom } from '@/lib/atoms/sample-climate-mvt';
+import {
+  sampleClimateMvtTimeAtom,
+  sampleClimateMvtAvailableTimesAtom,
+  sampleClimateMvtIsDecodingAtom
+} from '@/lib/atoms/sample-climate-mvt';
 
 /**
  * SampleClimateMvtTimePicker
  *
- * Simple time navigation for the MVT climate layer.
- * Shows current time and provides next/previous buttons.
+ * Time navigation for the MVT climate layer with play/pause and manual controls.
+ * - Play: sequential stepping — waits for each frame to fully decode before
+ *   advancing, then pauses 1200ms before moving to the next time step.
+ * - Previous/Next: manual navigation
  */
 export function SampleClimateMvtTimePicker() {
   const isHydrated = useHydrationAware();
   const [currentTime, setCurrentTime] = useAtom(sampleClimateMvtTimeAtom);
   const [availableTimes] = useAtom(sampleClimateMvtAvailableTimesAtom);
+  const isDecoding = useAtomValue(sampleClimateMvtIsDecodingAtom);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // Find current index
   const currentIndex = useMemo(() => {
     return availableTimes.indexOf(currentTime);
   }, [currentTime, availableTimes]);
 
+  // Sequential play: advance only after the current frame has finished decoding.
+  // When isDecoding flips to false (decode complete) and we're still playing,
+  // wait 1200ms then advance to the next time step, which will set isDecoding
+  // back to true — the timer clears and we wait for the next decode cycle.
+  useEffect(() => {
+    if (!isPlaying || isDecoding || availableTimes.length === 0) return;
+
+    const timer = setTimeout(() => {
+      setCurrentTime((prev) => {
+        const idx = availableTimes.indexOf(prev);
+        return availableTimes[(idx + 1) % availableTimes.length];
+      });
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [isPlaying, isDecoding, availableTimes, setCurrentTime]);
+
   if (!isHydrated || availableTimes.length === 0) {
     return null;
   }
 
   const handlePrevious = () => {
+    setIsPlaying(false);
     const prevIndex = currentIndex > 0 ? currentIndex - 1 : availableTimes.length - 1;
     setCurrentTime(availableTimes[prevIndex]);
   };
 
   const handleNext = () => {
+    setIsPlaying(false);
     const nextIndex = (currentIndex + 1) % availableTimes.length;
     setCurrentTime(availableTimes[nextIndex]);
+  };
+
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
   };
 
   return (
@@ -52,7 +83,16 @@ export function SampleClimateMvtTimePicker() {
           <ChevronLeft size={16} />
         </Button>
 
-        <span className="text-sm font-medium min-w-32 text-center">{currentTime}</span>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handlePlayPause}
+          disabled={availableTimes.length <= 1}
+          title={isPlaying ? 'Pause' : 'Play'}
+          className={`h-8 w-8 ${isPlaying ? 'bg-accent text-accent-foreground' : ''}`}
+        >
+          {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+        </Button>
 
         <Button
           variant="outline"
@@ -64,6 +104,8 @@ export function SampleClimateMvtTimePicker() {
         >
           <ChevronRight size={16} />
         </Button>
+
+        <span className="text-sm font-medium min-w-32 text-center">{currentTime}</span>
 
         <div className="text-xs text-muted-foreground ml-2">
           {currentIndex + 1} / {availableTimes.length}

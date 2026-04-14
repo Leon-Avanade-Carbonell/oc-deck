@@ -129,5 +129,18 @@ export function useGeoTIFFWorker() {
     []
   );
 
-  return { decode };
+  // Cancel all pending decode requests (e.g. when URL changes before a decode completes).
+  // The worker may still finish its current decode, but the results will be ignored
+  // since the promises are already rejected.
+  const cancelAll = useCallback(() => {
+    if (pendingRequestsRef.current.size === 0) return;
+    console.log('[useGeoTIFFWorker] Cancelling', pendingRequestsRef.current.size, 'pending request(s)');
+    pendingRequestsRef.current.forEach(({ reject, timeout }) => {
+      clearTimeout(timeout);
+      reject(new Error('Decode cancelled'));
+    });
+    pendingRequestsRef.current.clear();
+  }, []);
+
+  return { decode, cancelAll };
 }

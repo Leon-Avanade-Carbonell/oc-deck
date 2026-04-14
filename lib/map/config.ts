@@ -7,12 +7,12 @@ import type { BasemapId, MapControls, MapViewport } from './types';
 export const DEFAULT_BASEMAP: BasemapId = 'positron';
 
 /**
- * Default map viewport centered on Adelaide CBD, Australia.
+ * Default map viewport centered on Australia.
  * Override per-instance via the `initialViewport` prop on BaseMap.
  */
 export const DEFAULT_VIEWPORT: MapViewport = {
-  center: [138.6007, -34.9285],
-  zoom: 12,
+  center: [133.7751, -25.2744],
+  zoom: 3.5,
   pitch: 0,
   bearing: 0
 };

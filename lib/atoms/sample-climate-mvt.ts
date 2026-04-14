@@ -102,3 +102,11 @@ export const sampleClimateMvtVisibleAtom = atom(true);
  * Stores pixel value from raster on hover/pick
  */
 export const sampleClimateMvtHoveredValueAtom = atom<number | null>(null);
+
+/**
+ * sampleClimateMvtIsDecodingAtom
+ * True while the layer is actively fetching or decoding a GeoTIFF.
+ * Read by the time picker to drive sequential playback — the next
+ * time step is only triggered after this becomes false.
+ */
+export const sampleClimateMvtIsDecodingAtom = atom<boolean>(false);
