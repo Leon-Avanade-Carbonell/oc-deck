@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useLayoutEffect, useState } from 'react';
+import { Provider as JotaiProvider } from 'jotai';
 
 type Theme = 'light' | 'dark';
 
@@ -12,7 +13,11 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <ThemeProvider>{children}</ThemeProvider>;
+  return (
+    <JotaiProvider>
+      <ThemeProvider>{children}</ThemeProvider>
+    </JotaiProvider>
+  );
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

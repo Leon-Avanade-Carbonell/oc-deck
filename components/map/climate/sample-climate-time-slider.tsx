@@ -11,8 +11,9 @@ import {
   sampleClimateDataCacheAtom,
   sampleClimateLoadingTimesAtom,
   sampleClimateCurrentVariableAtom,
-  sampleClimatePlayingAtom,
+  sampleClimatePlayingAtom
 } from '@/lib/atoms/sample-climate';
+import { sampleClimateMvtTimeAtom, sampleClimateMvtVariableAtom } from '@/lib/atoms/sample-climate-mvt';
 
 /**
  * SampleClimateTimeSlider
@@ -31,6 +32,8 @@ import {
  */
 export function SampleClimateTimeSlider() {
   const [currentTime, setCurrentTime] = useAtom(sampleClimateCurrentTimeAtom);
+  const [, setMvtTime] = useAtom(sampleClimateMvtTimeAtom);
+  const [, setMvtVariable] = useAtom(sampleClimateMvtVariableAtom);
   const [availableTimes] = useAtom(sampleClimateAvailableTimesAtom);
   const [cache] = useAtom(sampleClimateDataCacheAtom);
   const [loadingTimes] = useAtom(sampleClimateLoadingTimesAtom);
@@ -38,6 +41,16 @@ export function SampleClimateTimeSlider() {
   const [isPlaying, setIsPlaying] = useAtom(sampleClimatePlayingAtom);
 
   const playbackIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync old climate atom changes to new MVT atom
+  useEffect(() => {
+    setMvtTime(currentTime);
+  }, [currentTime, setMvtTime]);
+
+  // Sync variable changes to MVT atom
+  useEffect(() => {
+    setMvtVariable(currentVariable);
+  }, [currentVariable, setMvtVariable]);
 
   // Map current time to slider index
   const currentIndex = useMemo(() => {
@@ -194,15 +207,9 @@ export function SampleClimateTimeSlider() {
 
         {/* Status indicators */}
         <div className="mt-2 flex items-center justify-center gap-2 min-h-5">
-          {isCurrentTimeCached && !isLoadingCurrentTime && (
-            <span className="text-xs text-green-600">✓ Loaded</span>
-          )}
-          {isLoadingCurrentTime && (
-            <span className="text-xs text-amber-600 animate-pulse">⟳ Loading...</span>
-          )}
-          {isPlaying && (
-            <span className="text-xs text-green-600 animate-pulse">▶ Playing</span>
-          )}
+          {isCurrentTimeCached && !isLoadingCurrentTime && <span className="text-xs text-green-600">✓ Loaded</span>}
+          {isLoadingCurrentTime && <span className="text-xs text-amber-600 animate-pulse">⟳ Loading...</span>}
+          {isPlaying && <span className="text-xs text-green-600 animate-pulse">▶ Playing</span>}
         </div>
       </div>
     </div>

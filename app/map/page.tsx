@@ -2,9 +2,11 @@
 
 import dynamic from 'next/dynamic';
 import { BasemapSelector } from '@/components/map/BasemapSelector';
-import { SampleClimateToggle } from '@/components/map/toggles/sample-climate-toggle';
+import { SampleClimateMvtToggle } from '@/components/map/toggles/sample-climate-mvt-toggle';
+import { SampleClimateMvtBandModeToggle } from '@/components/map/toggles/sample-climate-mvt-band-mode-toggle';
+import { SampleClimateMvtTimePicker } from '@/components/map/toggles/sample-climate-mvt-time-picker';
 import { CurrentLocationLayer } from '@/components/map/layers/CurrentLocationLayer';
-import { SampleClimateLayer } from '@/components/map/layers/sample-climate';
+import { SampleClimateMvtLayer } from '@/components/map/layers/sample-climate-mvt';
 import { SampleClimateTimeSlider } from '@/components/map/climate/sample-climate-time-slider';
 import { useUserLocation } from '@/lib/hooks/useUserLocation';
 
@@ -22,14 +24,18 @@ export default function MapPage() {
     <main className="relative flex-1 min-h-0 overflow-hidden w-full">
       <BaseMap>
         <CurrentLocationLayer />
-        <SampleClimateLayer />
+        <SampleClimateMvtLayer />
       </BaseMap>
 
       {/* Floating controls — top-right corner over the map */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-3">
         <BasemapSelector />
-        <SampleClimateToggle />
+        <SampleClimateMvtToggle />
+        <SampleClimateMvtBandModeToggle />
       </div>
+
+      {/* Climate MVT time picker — bottom-right */}
+      <SampleClimateMvtTimePicker />
 
       {/* Climate data time slider — center-bottom of map */}
       <SampleClimateTimeSlider />

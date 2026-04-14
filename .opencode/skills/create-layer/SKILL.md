@@ -27,6 +27,7 @@ I guide you through creating a new map layer by:
 ## When to Use Me
 
 Use this skill when you need to:
+
 - Create a new map layer following DeckGL + MapLibre + Jotai conventions
 - Scaffold boilerplate that follows all the patterns in `components/map/agent-guides/DECKGL-GUIDE.md`
 - Generate layer components that are immediately production-ready
@@ -55,6 +56,7 @@ When triggered, I ask:
 ### Integration Summary
 
 After generation, I provide:
+
 - List of created files with paths
 - Next steps and integration instructions
 - Copy-paste-ready code snippet for adding the layer to `BaseMap`
@@ -63,15 +65,16 @@ After generation, I provide:
 
 ### Template Selection
 
-| Interactivity | Dynamic Data | Template | Use Case |
-|---|---|---|---|
-| NO | NO | C (Simple) | Static markers, fixed overlays |
-| NO | YES | A (Data) | Zoom-aware hexagons, API-driven points |
-| YES | — | B (Interactive) | Clickable hexagons, selectable features |
+| Interactivity | Dynamic Data | Template        | Use Case                                |
+| ------------- | ------------ | --------------- | --------------------------------------- |
+| NO            | NO           | C (Simple)      | Static markers, fixed overlays          |
+| NO            | YES          | A (Data)        | Zoom-aware hexagons, API-driven points  |
+| YES           | —            | B (Interactive) | Clickable hexagons, selectable features |
 
 ### Code Quality
 
 All generated code includes:
+
 - ✅ TypeScript strict mode compatibility
 - ✅ Jotai atoms for state management (no useState)
 - ✅ useMemo for layer instance memoization
@@ -82,6 +85,7 @@ All generated code includes:
 ### Conflict Handling
 
 If layer name already exists:
+
 - Check for existing files (`{layerName}.tsx`, `{layerName}.ts`, `{layerName}-toggle.tsx`)
 - Refuse to overwrite
 - Prompt user for a different name
@@ -102,6 +106,7 @@ All scaffolded code follows these naming conventions:
 ## Reference
 
 For detailed layer patterns, implementation examples, and troubleshooting, see:
+
 - `components/map/agent-guides/DECKGL-GUIDE.md` — Complete layer guide with 3 templates
 - `components/map/agent-guides/DECKGL-GOTCHA.md` — Common errors and fixes
 
@@ -112,6 +117,7 @@ When implementing `/create-layer`, follow these steps:
 ### 1. Gather Layer Details
 
 Ask interactively for:
+
 - **Layer Name** (e.g., "HexPopulation") — validate: unique across `components/map/layers/`, `lib/atoms/`, and `components/map/toggles/`
 - **Interactivity** — YES → Template B, NO → continue to Q3
 - **Dynamic Data** (if not interactive) — YES → Template A, NO → Template C
@@ -122,6 +128,7 @@ Ask interactively for:
 ### 2. Validate Unique Name
 
 Before proceeding, check for existing files:
+
 - `components/map/layers/{kebabName}.tsx`
 - `lib/atoms/{kebabName}.ts`
 - `components/map/toggles/{kebabName}-toggle.tsx`
@@ -133,17 +140,20 @@ If any exist, refuse and prompt for a different name.
 Based on interactivity + dynamic data:
 
 **Template C — Simple Feature Layer** (NO interactivity, NO dynamic data)
+
 - Minimal state (just visibility)
 - Use ScatterplotLayer or simple layers
 - No zoom debouncing
 
 **Template A — Data Layer** (NO interactivity, YES dynamic data)
+
 - State: dataAtom, visibleAtom
 - Memoized layer instance
 - Debounce zoom/pan events (150ms)
 - updateTriggers configured
 
 **Template B — Data + Interactivity Layer** (YES interactivity, any data)
+
 - State: dataAtom, visibleAtom, selectedAtom
 - Memoized layer instance
 - pickable: true, onClick handler
@@ -155,9 +165,11 @@ Based on interactivity + dynamic data:
 Create three files (toggle is optional):
 
 #### File 1: Layer Component
+
 **Path**: `components/map/layers/{kebabName}.tsx`
 
 Template structure:
+
 ```typescript
 'use client';
 
@@ -174,7 +186,7 @@ import {
 
 /**
  * {PascalName}Layer
- * 
+ *
  * {Description of layer purpose}
  * Data source: {dataSource}
  */
@@ -201,9 +213,11 @@ export function {PascalName}Layer() {
 ```
 
 #### File 2: Atoms
+
 **Path**: `lib/atoms/{kebabName}.ts`
 
 Template structure:
+
 ```typescript
 import { atom } from 'jotai';
 
@@ -228,9 +242,11 @@ export const {camelName}SelectedAtom = atom<any | null>(null);
 ```
 
 #### File 3: Toggle (Optional)
+
 **Path**: `components/map/toggles/{kebabName}-toggle.tsx`
 
 Template structure:
+
 ```typescript
 'use client';
 
@@ -242,7 +258,7 @@ import { {camelName}VisibleAtom } from '@/lib/atoms/{kebabName}';
 
 /**
  * {PascalName}Toggle
- * 
+ *
  * Button component to toggle layer visibility.
  */
 export function {PascalName}Toggle() {
@@ -290,9 +306,9 @@ After file generation, provide:
 
 2. Add to BaseMap:
    Edit app/{your-page}/page.tsx or components/map/BaseMap.tsx:
-   
+
    import { {PascalName}Layer } from '@/components/map/layers/{kebabName}';
-   
+
    <BaseMap>
      <{PascalName}Layer />
      {/* other layers */}
@@ -300,9 +316,9 @@ After file generation, provide:
 
 3. Add toggle to UI (optional):
    Edit your control panel component:
-   
+
    import { {PascalName}Toggle } from '@/components/map/toggles/{kebabName}-toggle';
-   
+
    <{PascalName}Toggle />
 ```
 

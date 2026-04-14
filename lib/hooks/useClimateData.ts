@@ -7,7 +7,7 @@ import {
   sampleClimateAvailableTimesAtom,
   sampleClimateDataCacheAtom,
   sampleClimateLoadingTimesAtom,
-  sampleClimateErrorAtom,
+  sampleClimateErrorAtom
 } from '@/lib/atoms/sample-climate';
 
 // Use the Next.js API proxy instead of calling the backend directly
@@ -36,13 +36,13 @@ interface UseClimateDataOptions {
  * 5. Fetched data is cached to prevent re-fetching
  *
  * Data source: Climate API (proxied via /api/climate)
- * 
+ *
  * Troubleshooting:
  * - If you see "Failed to fetch" error:
  *   1. Ensure Climate API is running: http://localhost:8000/climate/variables
  *   2. Check browser console for specific error message
  *   3. Verify no data in database: run ingestion notebook first
- * 
+ *
  * - To use a different backend URL:
  *   Set CLIMATE_API_BASE environment variable (server-side only)
  *   Example: CLIMATE_API_BASE=http://remote-api.com/climate
@@ -89,7 +89,7 @@ export function useClimateData() {
     const discoverTimes = async () => {
       try {
         setError(null);
-        
+
         // Use cache-busting query param to ensure fresh data in development
         const url = `${CLIMATE_API_BASE}/times/${currentVariable}?t=${Date.now()}`;
         const response = await fetch(url);
@@ -134,11 +134,7 @@ export function useClimateData() {
  * - Stores fetched data in cache for future use
  * - Enables instant switching between cached times (no flickering)
  */
-export function useClimateDataForTime(
-  variable: string,
-  time: string,
-  options: UseClimateDataOptions = {}
-) {
+export function useClimateDataForTime(variable: string, time: string, options: UseClimateDataOptions = {}) {
   const [cache, setCache] = useAtom(sampleClimateDataCacheAtom);
   const [loadingTimes, setLoadingTimes] = useAtom(sampleClimateLoadingTimesAtom);
   const [, setError] = useAtom(sampleClimateErrorAtom);
@@ -180,16 +176,12 @@ export function useClimateDataForTime(
           if (options.minLon !== undefined) params.set('min_lon', String(options.minLon));
           if (options.maxLon !== undefined) params.set('max_lon', String(options.maxLon));
 
-          const url = `${CLIMATE_API_BASE}/grid/${variable}/${time}${
-            params.toString() ? `?${params.toString()}` : ''
-          }`;
+          const url = `${CLIMATE_API_BASE}/grid/${variable}/${time}${params.toString() ? `?${params.toString()}` : ''}`;
 
           const response = await fetch(url);
 
           if (!response.ok) {
-            throw new Error(
-              `Failed to fetch grid data for ${variable}/${time}: ${response.statusText}`
-            );
+            throw new Error(`Failed to fetch grid data for ${variable}/${time}: ${response.statusText}`);
           }
 
           const gridResponse = (await response.json()) as {
@@ -209,11 +201,7 @@ export function useClimateDataForTime(
 
           // Transform to DeckGL ScatterplotLayer format: [lon, lat, value]
           const { lats, lons, values } = gridResponse.data;
-          const positions: [number, number, number][] = lats.map((lat, i) => [
-            lons[i],
-            lat,
-            values[i],
-          ]);
+          const positions: [number, number, number][] = lats.map((lat, i) => [lons[i], lat, values[i]]);
 
           // Store in cache
           setCache((prev) => new Map(prev).set(cacheKey, positions));

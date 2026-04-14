@@ -31,6 +31,7 @@ To find the right template for your layer, answer the **Decision Tree** question
 **Features:** State management via Jotai atoms, memoized layer instance, visibility control
 
 **Example scenarios:**
+
 - Hexagons that change resolution based on zoom level
 - Points filtered by geographic bounds
 - Heatmap that updates from API data
@@ -63,8 +64,8 @@ export function MyDataLayer() {
         getFillColor: [200, 150, 100],
         updateTriggers: {
           getLineColor: [data],
-          getFillColor: [data],
-        },
+          getFillColor: [data]
+        }
       }),
     [data, visible]
   );
@@ -76,6 +77,7 @@ export function MyDataLayer() {
 ```
 
 **Key points:**
+
 - Layer instance is memoized with `useMemo()` — only recreates when dependencies change
 - `updateTriggers` tells DeckGL which properties to recalculate on the GPU
 - Atoms control visibility and data; component reads both
@@ -91,6 +93,7 @@ export function MyDataLayer() {
 **Features:** Everything from Template A, plus picking via DeckGL overlay and selection state
 
 **Example scenarios:**
+
 - Hexagons that show details on click
 - Points with hover highlighting
 - GeoJSON features with selection UI
@@ -104,11 +107,7 @@ import { PolygonLayer } from '@deck.gl/layers';
 import { useSmartLayer } from '@/lib/hooks/useSmartLayer';
 import { useDeckGLOverlay } from '@/lib/hooks/useDeckGLOverlay';
 
-import {
-  myLayerDataAtom,
-  myLayerVisibleAtom,
-  myLayerSelectedAtom,
-} from '@/lib/atoms/my-layer';
+import { myLayerDataAtom, myLayerVisibleAtom, myLayerSelectedAtom } from '@/lib/atoms/my-layer';
 
 export function MyInteractiveLayer() {
   const [data] = useAtom(myLayerDataAtom);
@@ -128,8 +127,7 @@ export function MyInteractiveLayer() {
           selected && feature.id === selected.id
             ? [255, 140, 0] // Highlight on selection
             : [200, 150, 100],
-        getLineWidth: (feature) =>
-          selected && feature.id === selected.id ? 3 : 1,
+        getLineWidth: (feature) => (selected && feature.id === selected.id ? 3 : 1),
         pickable: true,
         onClick: (info) => {
           if (info.object) {
@@ -138,8 +136,8 @@ export function MyInteractiveLayer() {
         },
         updateTriggers: {
           getFillColor: [selected],
-          getLineWidth: [selected],
-        },
+          getLineWidth: [selected]
+        }
       }),
     [data, visible, selected, setSelected]
   );
@@ -151,6 +149,7 @@ export function MyInteractiveLayer() {
 ```
 
 **Key points:**
+
 - `pickable: true` enables click detection
 - `onClick` handler receives `info.object` with the picked feature
 - `selected` state drives color/styling changes
@@ -166,6 +165,7 @@ export function MyInteractiveLayer() {
 **Features:** Minimal state, just visibility control
 
 **Example scenarios:**
+
 - User location marker (always same position)
 - Reference grid or overlay
 - Fixed annotations or labels
@@ -190,7 +190,7 @@ export function MySimpleLayer() {
         data: visible
           ? [
               { position: [151.2093, -33.8688], label: 'Sydney' },
-              { position: [144.9631, -37.8136], label: 'Melbourne' },
+              { position: [144.9631, -37.8136], label: 'Melbourne' }
             ]
           : [],
         getPosition: (d) => d.position,
@@ -198,7 +198,7 @@ export function MySimpleLayer() {
         getColor: [0, 128, 255],
         radiusScale: 1,
         radiusMinPixels: 4,
-        radiusMaxPixels: 100,
+        radiusMaxPixels: 100
       }),
     [visible]
   );
@@ -210,6 +210,7 @@ export function MySimpleLayer() {
 ```
 
 **Key points:**
+
 - Only one dependency: `visible`
 - Data is static (hardcoded in template) or minimal
 - No `updateTriggers` needed for static data
@@ -234,11 +235,7 @@ import { PolygonLayer } from '@deck.gl/layers';
 import { useSmartLayer } from '@/lib/hooks/useSmartLayer';
 import { useDeckGLOverlay } from '@/lib/hooks/useDeckGLOverlay';
 
-import {
-  sampleHexDataAtom,
-  sampleSelectedHexAtom,
-  sampleHexLayerVisibleAtom,
-} from '@/lib/atoms/sample-hex';
+import { sampleHexDataAtom, sampleSelectedHexAtom, sampleHexLayerVisibleAtom } from '@/lib/atoms/sample-hex';
 import { mapZoomAtom } from '@/lib/atoms/map';
 
 export function SampleHexLayer() {
@@ -274,8 +271,7 @@ export function SampleHexLayer() {
           const green = Math.round(normalized * 255);
           return [200, green, 100, 255 * 0.7]; // 70% opacity
         },
-        getLineWidth: (feature) =>
-          selected && feature.id === selected.id ? 3 : 1,
+        getLineWidth: (feature) => (selected && feature.id === selected.id ? 3 : 1),
         pickable: true,
         onClick: (info) => {
           if (info.object) {
@@ -284,8 +280,8 @@ export function SampleHexLayer() {
         },
         updateTriggers: {
           getFillColor: [hexData],
-          getLineWidth: [selected],
-        },
+          getLineWidth: [selected]
+        }
       }),
     [hexData, visible, selected, setSelected]
   );
@@ -297,6 +293,7 @@ export function SampleHexLayer() {
 ```
 
 **Key design patterns:**
+
 - **Zoom-aware data:** The `mapZoomAtom` triggers data regeneration; debouncing prevents thrashing
 - **Color interpolation:** `getFillColor` is a function that calculates color per feature based on its population
 - **Selection highlighting:** Selected hex gets thicker lines and stays highlighted
@@ -338,6 +335,7 @@ export function SampleHexToggle() {
 ```
 
 **Why this pattern works:**
+
 - **Single responsibility:** Button only controls visibility
 - **Decoupled from layer:** Toggle and layer don't import each other
 - **Jotai atom as bridge:** Both read/write the same `sampleHexLayerVisibleAtom`
@@ -402,6 +400,7 @@ const [data, setData] = useAtom(myLayerDataAtom);
 Creating a new DeckGL layer instance recreates GPU resources. Memoization prevents this unless dependencies actually change.
 
 **Use `useMemo()` for:**
+
 - The DeckGL layer instance itself
 - Any expensive calculations (color functions, data transforms)
 
@@ -412,7 +411,7 @@ const layer = useMemo(
   () =>
     new GeoJsonLayer({
       id: 'my-layer',
-      data: visible ? data : [],
+      data: visible ? data : []
       // ... more props
     }),
   [data, visible] // Only recreate if data or visible changes
@@ -420,6 +419,7 @@ const layer = useMemo(
 ```
 
 **Performance gotcha:**
+
 - If you forget a dependency, the layer won't update when needed
 - If you include too many dependencies, the layer recreates too often
 - Aim for: dependencies = data that directly affects layer rendering
@@ -443,6 +443,7 @@ useEffect(() => {
 ```
 
 **Why debounce?**
+
 - Zoom events fire frequently (multiple times per scroll)
 - Each event triggers data regeneration
 - Debouncing batches them: only regenerate after 150ms of no changes
@@ -460,8 +461,8 @@ new PolygonLayer({
       // info.object is the picked feature
       setSelected(info.object);
     }
-  },
-})
+  }
+});
 ```
 
 **Access the overlay for programmatic picking:**
@@ -473,11 +474,12 @@ const overlay = useDeckGLOverlay();
 const pickedObject = overlay.pickObject({
   x: mouseX,
   y: mouseY,
-  radius: 1,
+  radius: 1
 });
 ```
 
 **Picking events:**
+
 - `onClick`: Fired on mouse click
 - `onHover`: Fired on mouse move (be careful with performance)
 - Always check `if (info.object)` before using it
@@ -487,13 +489,13 @@ const pickedObject = overlay.pickObject({
 **Static color:**
 
 ```typescript
-getFillColor: [200, 150, 100] // RGB [0-255]
+getFillColor: [200, 150, 100]; // RGB [0-255]
 ```
 
 **Color with opacity:**
 
 ```typescript
-getFillColor: [200, 150, 100, 255 * 0.7] // RGBA, opacity as 4th channel
+getFillColor: [200, 150, 100, 255 * 0.7]; // RGBA, opacity as 4th channel
 ```
 
 **Dynamic color based on feature:**
@@ -503,7 +505,7 @@ getFillColor: (feature) => {
   if (feature.population > 10000) return [0, 255, 0]; // Green
   if (feature.population > 5000) return [255, 255, 0]; // Yellow
   return [255, 0, 0]; // Red
-}
+};
 ```
 
 **Color interpolation (linear mapping):**
@@ -514,7 +516,7 @@ getFillColor: (feature) => {
   const normalized = Math.min(pop / 10000, 1); // 0 to 1
   const green = Math.round(normalized * 255);
   return [200, green, 100]; // Gradient from brown to greenish
-}
+};
 ```
 
 **Use theme colors (from CSS variables):**
@@ -579,6 +581,7 @@ import { myLayerDataAtom } from '@/lib/atoms/my-layer';
 ### Troubleshooting
 
 **Q: Layer is not rendering at all**
+
 - Check 1: Is `visible` set to `true`?
 - Check 2: Is `data` non-empty?
 - Check 3: Are you calling `useSmartLayer(layer)` after creating the layer?
@@ -586,17 +589,20 @@ import { myLayerDataAtom } from '@/lib/atoms/my-layer';
 - Check 5: Are there console errors? Check browser DevTools.
 
 **Q: Layer renders but data hasn't updated**
+
 - Check 1: Did you add `data` to the `useMemo()` dependency array?
 - Check 2: Is the Jotai atom being updated? Add a console.log in your data-generating hook.
 - Check 3: Did you add the data to `updateTriggers`? Without it, GPU won't recalculate.
 
 **Q: Clicking on the layer doesn't work**
+
 - Check 1: Is `pickable: true` set on the layer?
 - Check 2: Is the `onClick` handler defined?
 - Check 3: Is `info.object` null? (Try `console.log(info.object)` in onClick handler.)
 - Check 4: Are you sure you're clicking on the layer, not a transparent part?
 
 **Q: Performance is sluggish**
+
 - Check 1: Is `useMemo()` being used for the layer instance?
 - Check 2: Are expensive functions (like `getFillColor`) defined inline? Move to `useMemo()` or extract outside component.
 - Check 3: Is debouncing used for zoom/pan events? Add 150ms debounce.
@@ -604,6 +610,7 @@ import { myLayerDataAtom } from '@/lib/atoms/my-layer';
 - Check 5: Check DevTools Performance tab for bottlenecks.
 
 **Q: Atom changes aren't triggering layer updates**
+
 - Check 1: Are you using `useAtom()` to read the atom? (Proper hook.)
 - Check 2: Is the atom being updated elsewhere? Add console.log on `setAtom`.
 - Check 3: Is the atom included in the `useMemo()` dependency array?
@@ -615,6 +622,7 @@ import { myLayerDataAtom } from '@/lib/atoms/my-layer';
 Use this checklist to validate your layer before marking it complete.
 
 ### Technical Requirements
+
 - [ ] Layer is wrapped in `useSmartLayer()` call
 - [ ] Layer instance is memoized with `useMemo()`
 - [ ] All state lives in Jotai atoms (no `useState`)
@@ -626,6 +634,7 @@ Use this checklist to validate your layer before marking it complete.
 - [ ] All dependencies in `useMemo()` are correct (console check)
 
 ### Naming & Conventions
+
 - [ ] Component file: PascalCase (e.g., `MyCustomLayer.tsx`)
 - [ ] Component file location: `components/map/layers/my-custom-layer.tsx`
 - [ ] Atoms file location: `lib/atoms/my-custom-layer.ts`
@@ -634,12 +643,14 @@ Use this checklist to validate your layer before marking it complete.
 - [ ] Hook file location: `lib/hooks/use*.ts` (if you created helper hooks)
 
 ### Documentation
+
 - [ ] Component has JSDoc comment explaining its purpose
 - [ ] Atoms file has JSDoc comments for each atom
 - [ ] Complex logic (color functions, debouncing) is commented
 - [ ] README or documentation updated (if layer is public-facing)
 
 ### Integration
+
 - [ ] Toggle/control component created (if layer visibility should be togglable)
 - [ ] Toggle component reads/writes the `*Visible` atom
 - [ ] Layer component is added as child to `<BaseMap>`

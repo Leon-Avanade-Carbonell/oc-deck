@@ -19,6 +19,13 @@ export const mapInstanceAtom = atom<MapLibreMap | null>(null);
 export const deckglOverlayAtom = atom<MapboxOverlay | null>(null);
 
 /**
+ * Current map zoom level.
+ * Synced continuously from the MapLibre map instance via `useMapInitialization`.
+ * Used by layers that need to adapt their resolution based on zoom (e.g., climate COG zoom selection).
+ */
+export const mapZoomAtom = atom<number>(12); // Default zoom level (Adelaide CBD)
+
+/**
  * Registry of all active layers.
  * Each smart layer adds itself on mount and removes itself on unmount via `useSmartLayer`.
  * BaseMap reads this atom to pass visible layers to DeckGL.

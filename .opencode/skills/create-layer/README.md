@@ -23,6 +23,7 @@ When using the `create-layer` skill (via OpenCode or directly), follow this flow
 ### 1. Gather Requirements
 
 Ask the user for:
+
 - **Layer name** (unique across the project)
 - **Interactivity needs** (does it support picking/selection?)
 - **Dynamic data** (does it update based on zoom/bounds/API?)
@@ -33,6 +34,7 @@ Ask the user for:
 ### 2. Validate Uniqueness
 
 Check for conflicts in:
+
 - `components/map/layers/{kebabName}.tsx`
 - `lib/atoms/{kebabName}.ts`
 - `components/map/toggles/{kebabName}-toggle.tsx`
@@ -43,20 +45,22 @@ If conflicts exist, refuse and ask for a different name.
 
 Based on the answers:
 
-| Interactivity | Dynamic Data | Template | Use Case |
-|---|---|---|---|
-| NO | NO | C (Simple) | Static markers, fixed overlays |
-| NO | YES | A (Data) | Zoom-aware hexagons, API-driven data |
-| YES | — | B (Interactive) | Clickable hexagons, selectable features |
+| Interactivity | Dynamic Data | Template        | Use Case                                |
+| ------------- | ------------ | --------------- | --------------------------------------- |
+| NO            | NO           | C (Simple)      | Static markers, fixed overlays          |
+| NO            | YES          | A (Data)        | Zoom-aware hexagons, API-driven data    |
+| YES           | —            | B (Interactive) | Clickable hexagons, selectable features |
 
 ### 4. Generate Files
 
 Create the three scaffolding files:
+
 1. Layer component (`components/map/layers/{kebabName}.tsx`)
 2. Atoms file (`lib/atoms/{kebabName}.ts`)
 3. Toggle component (optional, `components/map/toggles/{kebabName}-toggle.tsx`)
 
 All generated files should:
+
 - ✅ Pass TypeScript strict mode
 - ✅ Have no linting errors
 - ✅ Include JSDoc comments
@@ -66,6 +70,7 @@ All generated files should:
 ### 5. Provide Integration Instructions
 
 Output a summary showing:
+
 - Files created (with relative paths)
 - Next steps for customization
 - Copy-paste code for BaseMap integration
@@ -87,14 +92,14 @@ Output a summary showing:
 
 2. Add to BaseMap:
    import { SamplePopulationLayer } from '@/components/map/layers/sample-population';
-   
+
    <BaseMap>
      <SamplePopulationLayer />
    </BaseMap>
 
 3. Add toggle to UI (optional):
    import { SamplePopulationToggle } from '@/components/map/toggles/sample-population-toggle';
-   
+
    <SamplePopulationToggle />
 
 ✨ Layer scaffolding complete!
@@ -109,6 +114,7 @@ A sample layer (`sample-population`) has been generated as a test case:
 - **Toggle**: `components/map/toggles/sample-population-toggle.tsx`
 
 This layer demonstrates:
+
 - ✅ Template A (Data Layer) implementation
 - ✅ Zoom-aware data with debouncing
 - ✅ Proper Jotai atom usage
@@ -118,6 +124,7 @@ This layer demonstrates:
 - ✅ All naming conventions followed
 
 Verify linting passes:
+
 ```bash
 bun run lint components/map/layers/sample-population.tsx \
   lib/atoms/sample-population.ts \
@@ -132,13 +139,13 @@ When implementing, use these transformations:
 // Input: "HexPopulation"
 
 // kebabName: for files and layer IDs
-const kebabName = toKebabCase("HexPopulation"); // "hex-population"
+const kebabName = toKebabCase('HexPopulation'); // "hex-population"
 
 // camelName: for atoms and functions
-const camelName = toCamelCase("HexPopulation"); // "hexPopulation"
+const camelName = toCamelCase('HexPopulation'); // "hexPopulation"
 
 // PascalName: for React components
-const PascalName = toPascalCase("HexPopulation"); // "HexPopulation"
+const PascalName = toPascalCase('HexPopulation'); // "HexPopulation"
 ```
 
 ## File Generation Rules
@@ -148,6 +155,7 @@ const PascalName = toPascalCase("HexPopulation"); // "HexPopulation"
 **Location**: `components/map/layers/{kebabName}.tsx`
 
 **Requirements**:
+
 - Must have `'use client'` directive
 - Must use `useSmartLayer()` hook
 - Must memoize layer instance
@@ -156,6 +164,7 @@ const PascalName = toPascalCase("HexPopulation"); // "HexPopulation"
 - Must return `null`
 
 **By Template**:
+
 - **Template C**: Minimal state, just visibility
 - **Template A**: Includes zoom debouncing, updateTriggers
 - **Template B**: Includes pickable=true, onClick, selection state
@@ -165,6 +174,7 @@ const PascalName = toPascalCase("HexPopulation"); // "HexPopulation"
 **Location**: `lib/atoms/{kebabName}.ts`
 
 **Requirements**:
+
 - Must define `{camelName}DataAtom` (always)
 - Must define `{camelName}VisibleAtom` (always)
 - Must define `{camelName}SelectedAtom` (Template B only)
@@ -176,6 +186,7 @@ const PascalName = toPascalCase("HexPopulation"); // "HexPopulation"
 **Location**: `components/map/toggles/{kebabName}-toggle.tsx`
 
 **Requirements**:
+
 - Must have `'use client'` directive
 - Must use Eye/EyeOff icons from `lucide-react`
 - Must read/write `{camelName}VisibleAtom`
