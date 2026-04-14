@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { BitmapLayer } from '@deck.gl/layers';
 import { useSmartLayer } from '@/lib/hooks/useSmartLayer';
 import { useHydrationAware } from '@/lib/hooks/useHydrationAware';
-import { decodeGeoTIFF, imageBitmapToDataUrl } from '@/lib/geotiff/decoder';
+import { imageBitmapToDataUrl } from '@/lib/geotiff/decoder';
+import { useGeoTIFFWorker } from '@/lib/hooks/useGeoTIFFWorker';
 
 import {
   sampleClimateMvtImageUrlAtom,
@@ -20,14 +21,16 @@ import {
  *
  * Process:
  * 1. Fetch GeoTIFF from backend (Web Mercator, EPSG:3857)
- * 2. Decode GeoTIFF to extract image and bounds metadata
- * 3. Convert ImageBitmap to PNG data URL (format BitmapLayer supports)
- * 4. Pass image URL + bounds to BitmapLayer
+ * 2. Send to Web Worker for decoding (off main thread)
+ * 3. Worker extracts ImageBitmap and bounds metadata
+ * 4. Convert ImageBitmap to PNG data URL (format BitmapLayer supports)
+ * 5. Pass image URL + bounds to BitmapLayer
  *
  * Backend provides:
  * - GeoTIFFs in Web Mercator projection (EPSG:3857)
  * - Embedded georeferencing (ModelPixelScale + ModelTiepoint)
  * - Metadata tags (CRS, BOUNDS_WGS84)
+ * - Alpha channel for NaN transparency support
  *
  * Data source: `/api/climate-mvt/{variable}/{time}/z{zoom}.tif`
  * Progressive zoom levels: z0 (256px) to z5 (8192px)
@@ -37,11 +40,13 @@ export function SampleClimateMvtLayer() {
   const [imageUrl] = useAtom(sampleClimateMvtImageUrlAtom);
   const [, setHoveredValue] = useAtom(sampleClimateMvtHoveredValueAtom);
   const [visible] = useAtom(sampleClimateMvtVisibleAtom);
+  const { decode: decodeGeoTIFF } = useGeoTIFFWorker();
 
   // State for decoded image and bounds
   const [decodedImageUrl, setDecodedImageUrl] = useState<string | null>(null);
   const [boundsFromGeoTIFF, setBoundsFromGeoTIFF] = useState<[number, number, number, number] | null>(null);
   const [decodeError, setDecodeError] = useState<string | null>(null);
+  const [isDecoding, setIsDecoding] = useState(false);
 
   // Decode GeoTIFF when URL changes
   useEffect(() => {
@@ -56,6 +61,7 @@ export function SampleClimateMvtLayer() {
     const decodeImage = async () => {
       try {
         setDecodeError(null);
+        setIsDecoding(true);
 
         // Fetch the GeoTIFF file
         console.log('[SampleClimateMvtLayer] Fetching GeoTIFF from:', imageUrl);
@@ -80,8 +86,8 @@ export function SampleClimateMvtLayer() {
           throw new Error(`Invalid GeoTIFF format. Header: ${Array.from(headerView).map(b => b.toString(16)).join(' ')}`);
         }
 
-        // Decode GeoTIFF to get ImageBitmap and bounds
-        console.log('[SampleClimateMvtLayer] Starting GeoTIFF decode...');
+        // Decode GeoTIFF in Web Worker to avoid blocking main thread
+        console.log('[SampleClimateMvtLayer] Sending to Web Worker for decoding...');
         const { bitmap, bounds } = await decodeGeoTIFF(arrayBuffer);
         console.log(
           '[SampleClimateMvtLayer] GeoTIFF decoded successfully, size:',
@@ -111,6 +117,10 @@ export function SampleClimateMvtLayer() {
         if (isMounted) {
           setDecodeError(errorMsg);
         }
+      } finally {
+        if (isMounted) {
+          setIsDecoding(false);
+        }
       }
     };
 
@@ -119,10 +129,7 @@ export function SampleClimateMvtLayer() {
     return () => {
       isMounted = false;
     };
-  }, [imageUrl, isHydrated]);
-
-  // Use bounds from GeoTIFF if available
-  const layerBounds = boundsFromGeoTIFF;
+  }, [imageUrl, isHydrated, decodeGeoTIFF]);
 
   // Create BitmapLayer with decoded image and extracted bounds
   const layer = useMemo(
@@ -130,9 +137,9 @@ export function SampleClimateMvtLayer() {
       new BitmapLayer({
         id: 'sample-climate-mvt',
         image: decodedImageUrl,
-        bounds: layerBounds || undefined,
+        bounds: boundsFromGeoTIFF || undefined,
         pickable: true,
-        opacity: 0.7,
+        opacity: 0.5,
         onClick: (info) => {
           if (info.color) {
             const pixelValue = info.color[0];
@@ -148,10 +155,10 @@ export function SampleClimateMvtLayer() {
         },
         updateTriggers: {
           image: [decodedImageUrl],
-          bounds: [layerBounds]
+          bounds: [boundsFromGeoTIFF]
         }
       }),
-    [decodedImageUrl, layerBounds, setHoveredValue]
+    [decodedImageUrl, boundsFromGeoTIFF, setHoveredValue]
   );
 
   // Register layer with smart layer system
@@ -173,6 +180,10 @@ export function SampleClimateMvtLayer() {
 
   if (decodeError) {
     console.error('[SampleClimateMvtLayer] Decode error:', decodeError);
+  }
+
+  if (isDecoding) {
+    console.log('[SampleClimateMvtLayer] Decoding in progress...');
   }
 
   // Layer component (renders via DeckGL, not DOM)
