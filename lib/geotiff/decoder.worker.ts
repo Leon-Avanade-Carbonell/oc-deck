@@ -1,17 +1,17 @@
 /**
  * Web Worker for decoding GeoTIFF files off the main thread
- * 
+ *
  * This worker handles GeoTIFF parsing and ImageBitmap creation,
  * which can be CPU-intensive. Running in a worker prevents
  * blocking the main thread's rendering.
- * 
+ *
  * Message format (from main thread):
  * {
  *   id: string (unique request ID)
  *   arrayBuffer: ArrayBuffer (binary GeoTIFF data)
  *   bandMode: 'rgb' | 'raw'
  * }
- * 
+ *
  * Response format (to main thread):
  * {
  *   id: string (matches request ID)
@@ -87,7 +87,9 @@ async function decodeGeoTIFFInWorker(
   } catch (parseError) {
     console.error('[Worker] Error parsing GeoTIFF from ArrayBuffer:');
     console.error('  - Error:', parseError instanceof Error ? parseError.message : parseError);
-    throw new Error(`Failed to parse GeoTIFF: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+    throw new Error(
+      `Failed to parse GeoTIFF: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+    );
   }
 
   let image;
@@ -124,7 +126,14 @@ async function decodeGeoTIFFInWorker(
     const green = greenBand[0] as Uint8Array | Uint16Array;
     const blue = blueBand[0] as Uint8Array | Uint16Array;
     const alpha = alphaBand[0] as Uint8Array | Uint16Array;
-    console.log('[Worker] Band data types:', red?.constructor?.name, green?.constructor?.name, blue?.constructor?.name, 'alpha:', alpha?.constructor?.name);
+    console.log(
+      '[Worker] Band data types:',
+      red?.constructor?.name,
+      green?.constructor?.name,
+      blue?.constructor?.name,
+      'alpha:',
+      alpha?.constructor?.name
+    );
 
     // Determine if data is 8-bit or 16-bit
     const isUint16 = red instanceof Uint16Array;
@@ -193,7 +202,7 @@ async function decodeGeoTIFFInWorker(
   // ModelTiepoint = [imageX, imageY, rasterX, geoX, geoY, geoZ]
   // ModelPixelScale = [scaleX, scaleY, scaleZ]
   // Bounds = [geoX, geoY - (height * scaleY), geoX + (width * scaleX), geoY]
-  const geoTiff = image.geoTiffData || {};
+  const geoTiff = (image as any).geoTiffData || {};
 
   let bounds: [number, number, number, number] = [
     112.85, // west - WGS84 fallback
@@ -203,7 +212,7 @@ async function decodeGeoTIFFInWorker(
   ];
 
   // Try to read metadata tags first
-  const tags = image.getTags?.() || {};
+  const tags = (image as any).getTags?.() || {};
   console.log('[Worker] Available GeoTIFF tags:', Object.keys(tags));
 
   // Check for BOUNDS_WGS84 tag mentioned in backend guide
@@ -286,7 +295,7 @@ self.onmessage = async (event: MessageEvent<DecodeWorkerMessage>) => {
     };
 
     // Transfer the bitmap to the main thread (not a copy, but a transfer)
-    self.postMessage(response, [bitmap]);
+    (self as any).postMessage(response, [bitmap]);
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Worker] Decode failed:', errorMsg);

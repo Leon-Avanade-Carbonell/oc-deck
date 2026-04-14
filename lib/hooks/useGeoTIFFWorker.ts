@@ -31,10 +31,9 @@ export function useGeoTIFFWorker() {
     console.log('[useGeoTIFFWorker] Initializing worker');
 
     try {
-      // Create worker from the decoder.worker.ts file
-      workerRef.current = new Worker(new URL('./decoder.worker.ts', import.meta.url), {
-        type: 'module'
-      });
+      // Create worker from the lib folder using relative import
+      // Turbopack will bundle this and make it available as a worker
+      workerRef.current = new Worker(new URL('../geotiff/decoder.worker.ts', import.meta.url), { type: 'module' });
 
       // Handle messages from the worker
       workerRef.current.onmessage = (event: MessageEvent) => {

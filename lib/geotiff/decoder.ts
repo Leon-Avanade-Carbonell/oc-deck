@@ -68,7 +68,7 @@ export async function decodeGeoTIFF(
   try {
     // Parse the GeoTIFF file
     console.log('[decodeGeoTIFF] Starting decode, arrayBuffer size:', arrayBuffer.byteLength);
-    
+
     let tiff;
     try {
       tiff = await fromArrayBuffer(arrayBuffer);
@@ -79,9 +79,11 @@ export async function decodeGeoTIFF(
       if (parseError instanceof Error) {
         console.error('  - Stack:', parseError.stack);
       }
-      throw new Error(`Failed to parse GeoTIFF: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+      throw new Error(
+        `Failed to parse GeoTIFF: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+      );
     }
-    
+
     let image;
     try {
       image = await tiff.getImage();
@@ -119,7 +121,14 @@ export async function decodeGeoTIFF(
       const green = greenBand[0] as Uint8Array | Uint16Array;
       const blue = blueBand[0] as Uint8Array | Uint16Array;
       const alpha = alphaBand[0] as Uint8Array | Uint16Array;
-      console.log('[decodeGeoTIFF] Band data types:', red?.constructor?.name, green?.constructor?.name, blue?.constructor?.name, 'alpha:', alpha?.constructor?.name);
+      console.log(
+        '[decodeGeoTIFF] Band data types:',
+        red?.constructor?.name,
+        green?.constructor?.name,
+        blue?.constructor?.name,
+        'alpha:',
+        alpha?.constructor?.name
+      );
 
       // Determine if data is 8-bit or 16-bit
       const isUint16 = red instanceof Uint16Array;
@@ -140,7 +149,7 @@ export async function decodeGeoTIFF(
         data[i * 4 + 1] = g; // G
         data[i * 4 + 2] = b; // B
         data[i * 4 + 3] = a; // A (preserve alpha: 0=transparent for NaN, 255=opaque for valid data)
-        
+
         if (a === 0) {
           transparentPixels++;
         }
@@ -153,7 +162,12 @@ export async function decodeGeoTIFF(
       const alphaBand = await image.readRasters({ samples: [3] });
       const raw = rawBand[0] as Uint8Array | Uint16Array;
       const alpha = alphaBand[0] as Uint8Array | Uint16Array;
-      console.log('[decodeGeoTIFF] Raw band read, type:', raw?.constructor?.name, 'alpha type:', alpha?.constructor?.name);
+      console.log(
+        '[decodeGeoTIFF] Raw band read, type:',
+        raw?.constructor?.name,
+        'alpha type:',
+        alpha?.constructor?.name
+      );
 
       // Determine if data is 8-bit or 16-bit
       const isUint16 = raw instanceof Uint16Array;
@@ -171,7 +185,7 @@ export async function decodeGeoTIFF(
         data[i * 4 + 1] = normalized; // G
         data[i * 4 + 2] = normalized; // B
         data[i * 4 + 3] = a; // A (preserve alpha: 0=transparent for NaN, 255=opaque for valid data)
-        
+
         if (a === 0) {
           transparentPixels++;
         }
@@ -188,7 +202,7 @@ export async function decodeGeoTIFF(
     // ModelTiepoint = [imageX, imageY, rasterX, geoX, geoY, geoZ]
     // ModelPixelScale = [scaleX, scaleY, scaleZ]
     // Bounds = [geoX, geoY - (height * scaleY), geoX + (width * scaleX), geoY]
-    const geoTiff = image.geoTiffData || {};
+    const geoTiff = (image as any).geoTiffData || {};
 
     let bounds: [number, number, number, number] = [
       112.85, // west - WGS84 fallback
@@ -198,7 +212,7 @@ export async function decodeGeoTIFF(
     ];
 
     // Try to read metadata tags first
-    const tags = image.getTags?.() || {};
+    const tags = (image as any).getTags?.() || {};
     console.log('[decodeGeoTIFF] Available GeoTIFF tags:', Object.keys(tags));
 
     // Check for BOUNDS_WGS84 tag mentioned in backend guide

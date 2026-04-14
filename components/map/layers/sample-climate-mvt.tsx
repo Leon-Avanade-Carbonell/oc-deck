@@ -70,20 +70,35 @@ export function SampleClimateMvtLayer() {
           throw new Error(`Failed to fetch GeoTIFF: ${response.status} ${response.statusText}`);
         }
 
-        console.log('[SampleClimateMvtLayer] Response received, Content-Type:', response.headers.get('content-type'), 'Content-Length:', response.headers.get('content-length'));
-        
+        console.log(
+          '[SampleClimateMvtLayer] Response received, Content-Type:',
+          response.headers.get('content-type'),
+          'Content-Length:',
+          response.headers.get('content-length')
+        );
+
         const arrayBuffer = await response.arrayBuffer();
         console.log('[SampleClimateMvtLayer] ArrayBuffer created, size:', arrayBuffer.byteLength, 'bytes');
-        
+
         // Verify we have a valid GeoTIFF (should start with TIFF header: "II*" or "MM*")
         const headerView = new Uint8Array(arrayBuffer, 0, 4);
         const header = String.fromCharCode(...headerView);
-        console.log('[SampleClimateMvtLayer] TIFF header bytes:', header.charCodeAt(0), header.charCodeAt(1), header.charCodeAt(2), header.charCodeAt(3));
+        console.log(
+          '[SampleClimateMvtLayer] TIFF header bytes:',
+          header.charCodeAt(0),
+          header.charCodeAt(1),
+          header.charCodeAt(2),
+          header.charCodeAt(3)
+        );
         const isValidTiff = header.startsWith('II*') || header.startsWith('MM*');
         console.log('[SampleClimateMvtLayer] Is valid TIFF header:', isValidTiff);
-        
+
         if (!isValidTiff) {
-          throw new Error(`Invalid GeoTIFF format. Header: ${Array.from(headerView).map(b => b.toString(16)).join(' ')}`);
+          throw new Error(
+            `Invalid GeoTIFF format. Header: ${Array.from(headerView)
+              .map((b) => b.toString(16))
+              .join(' ')}`
+          );
         }
 
         // Decode GeoTIFF in Web Worker to avoid blocking main thread
@@ -132,34 +147,33 @@ export function SampleClimateMvtLayer() {
   }, [imageUrl, isHydrated, decodeGeoTIFF]);
 
   // Create BitmapLayer with decoded image and extracted bounds
-  const layer = useMemo(
-    () =>
-      new BitmapLayer({
-        id: 'sample-climate-mvt',
-        image: decodedImageUrl,
-        bounds: boundsFromGeoTIFF || undefined,
-        pickable: true,
-        opacity: 0.5,
-        onClick: (info) => {
-          if (info.color) {
-            const pixelValue = info.color[0];
-            setHoveredValue(pixelValue);
-            console.log('[SampleClimateMvtLayer] Clicked pixel value:', pixelValue);
-          }
-        },
-        onHover: (info) => {
-          if (info.color) {
-            const pixelValue = info.color[0];
-            setHoveredValue(pixelValue);
-          }
-        },
-        updateTriggers: {
-          image: [decodedImageUrl],
-          bounds: [boundsFromGeoTIFF]
+  // When image is not ready yet, create a layer with default values that won't render
+  const layer = useMemo(() => {
+    return new BitmapLayer({
+      id: 'sample-climate-mvt',
+      image: decodedImageUrl || undefined,
+      bounds: boundsFromGeoTIFF || undefined,
+      pickable: true,
+      opacity: 0.5,
+      onClick: (info) => {
+        if (info.color) {
+          const pixelValue = info.color[0];
+          setHoveredValue(pixelValue);
+          console.log('[SampleClimateMvtLayer] Clicked pixel value:', pixelValue);
         }
-      }),
-    [decodedImageUrl, boundsFromGeoTIFF, setHoveredValue]
-  );
+      },
+      onHover: (info) => {
+        if (info.color) {
+          const pixelValue = info.color[0];
+          setHoveredValue(pixelValue);
+        }
+      },
+      updateTriggers: {
+        image: [decodedImageUrl],
+        bounds: [boundsFromGeoTIFF]
+      }
+    });
+  }, [decodedImageUrl, boundsFromGeoTIFF, setHoveredValue]);
 
   // Register layer with smart layer system
   const { setVisible: setLayerVisible } = useSmartLayer({
