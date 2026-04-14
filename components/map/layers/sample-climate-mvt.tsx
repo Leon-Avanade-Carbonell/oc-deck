@@ -151,8 +151,8 @@ export function SampleClimateMvtLayer() {
   const layer = useMemo(() => {
     return new BitmapLayer({
       id: 'sample-climate-mvt',
-      image: decodedImageUrl || undefined,
-      bounds: boundsFromGeoTIFF || undefined,
+      image: decodedImageUrl,
+      bounds: boundsFromGeoTIFF ?? ([1, 0, 0, 1] as [number, number, number, number]),
       pickable: true,
       opacity: 0.5,
       onClick: (info) => {
