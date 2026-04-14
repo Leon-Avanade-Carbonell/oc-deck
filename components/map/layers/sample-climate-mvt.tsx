@@ -9,47 +9,45 @@ import { decodeGeoTIFF, imageBitmapToDataUrl } from '@/lib/geotiff/decoder';
 
 import {
   sampleClimateMvtImageUrlAtom,
-  sampleClimateMvtBoundsAtom,
   sampleClimateMvtHoveredValueAtom,
-  sampleClimateMvtVisibleAtom,
-  sampleClimateMvtBandModeAtom
+  sampleClimateMvtVisibleAtom
 } from '@/lib/atoms/sample-climate-mvt';
 
 /**
  * SampleClimateMvtLayer
  *
  * Renders Cloud-Optimized GeoTIFF (COG) climate data from the climate-mvt API.
- * Decodes GeoTIFF files server-side and renders them via DeckGL's BitmapLayer.
  *
- * Data source: `/climate-mvt/{variable}/{time}/z{zoom}.tif`
- * Bounds: Australia extent (112.85°E, -43.65°S to 154.0°E, -10.0°S)
+ * Process:
+ * 1. Fetch GeoTIFF from backend (Web Mercator, EPSG:3857)
+ * 2. Decode GeoTIFF to extract image and bounds metadata
+ * 3. Convert ImageBitmap to PNG data URL (format BitmapLayer supports)
+ * 4. Pass image URL + bounds to BitmapLayer
  *
- * GeoTIFF Structure:
- * - Bands 0-2: RGB visual (green colormap)
- * - Band 3: Grayscale raw data (normalized 0-255)
- * - Georeferencing: WGS84 (EPSG:4326)
+ * Backend provides:
+ * - GeoTIFFs in Web Mercator projection (EPSG:3857)
+ * - Embedded georeferencing (ModelPixelScale + ModelTiepoint)
+ * - Metadata tags (CRS, BOUNDS_WGS84)
  *
- * Display Modes:
- * - 'rgb': Render colored visual representation
- * - 'raw': Render grayscale raw measurement data
+ * Data source: `/api/climate-mvt/{variable}/{time}/z{zoom}.tif`
+ * Progressive zoom levels: z0 (256px) to z5 (8192px)
  */
 export function SampleClimateMvtLayer() {
   const isHydrated = useHydrationAware();
   const [imageUrl] = useAtom(sampleClimateMvtImageUrlAtom);
-  const [bounds] = useAtom(sampleClimateMvtBoundsAtom);
   const [, setHoveredValue] = useAtom(sampleClimateMvtHoveredValueAtom);
   const [visible] = useAtom(sampleClimateMvtVisibleAtom);
-  const [bandMode] = useAtom(sampleClimateMvtBandModeAtom);
 
-  // State for decoded image
+  // State for decoded image and bounds
   const [decodedImageUrl, setDecodedImageUrl] = useState<string | null>(null);
-  const [isDecoding, setIsDecoding] = useState(false);
+  const [boundsFromGeoTIFF, setBoundsFromGeoTIFF] = useState<[number, number, number, number] | null>(null);
   const [decodeError, setDecodeError] = useState<string | null>(null);
 
-  // Decode GeoTIFF when URL or band mode changes
+  // Decode GeoTIFF when URL changes
   useEffect(() => {
     if (!isHydrated || !imageUrl) {
       setDecodedImageUrl(null);
+      setBoundsFromGeoTIFF(null);
       return;
     }
 
@@ -57,38 +55,61 @@ export function SampleClimateMvtLayer() {
 
     const decodeImage = async () => {
       try {
-        setIsDecoding(true);
         setDecodeError(null);
 
         // Fetch the GeoTIFF file
+        console.log('[SampleClimateMvtLayer] Fetching GeoTIFF from:', imageUrl);
         const response = await fetch(imageUrl);
         if (!response.ok) {
-          throw new Error(`Failed to fetch GeoTIFF: ${response.statusText}`);
+          throw new Error(`Failed to fetch GeoTIFF: ${response.status} ${response.statusText}`);
         }
 
+        console.log('[SampleClimateMvtLayer] Response received, Content-Type:', response.headers.get('content-type'), 'Content-Length:', response.headers.get('content-length'));
+        
         const arrayBuffer = await response.arrayBuffer();
+        console.log('[SampleClimateMvtLayer] ArrayBuffer created, size:', arrayBuffer.byteLength, 'bytes');
+        
+        // Verify we have a valid GeoTIFF (should start with TIFF header: "II*" or "MM*")
+        const headerView = new Uint8Array(arrayBuffer, 0, 4);
+        const header = String.fromCharCode(...headerView);
+        console.log('[SampleClimateMvtLayer] TIFF header bytes:', header.charCodeAt(0), header.charCodeAt(1), header.charCodeAt(2), header.charCodeAt(3));
+        const isValidTiff = header.startsWith('II*') || header.startsWith('MM*');
+        console.log('[SampleClimateMvtLayer] Is valid TIFF header:', isValidTiff);
+        
+        if (!isValidTiff) {
+          throw new Error(`Invalid GeoTIFF format. Header: ${Array.from(headerView).map(b => b.toString(16)).join(' ')}`);
+        }
 
-        // Decode GeoTIFF to ImageBitmap
-        const bitmap = await decodeGeoTIFF(arrayBuffer, bandMode);
-        console.log('[SampleClimateMvtLayer] GeoTIFF decoded successfully, size:', bitmap.width, 'x', bitmap.height);
+        // Decode GeoTIFF to get ImageBitmap and bounds
+        console.log('[SampleClimateMvtLayer] Starting GeoTIFF decode...');
+        const { bitmap, bounds } = await decodeGeoTIFF(arrayBuffer);
+        console.log(
+          '[SampleClimateMvtLayer] GeoTIFF decoded successfully, size:',
+          bitmap.width,
+          'x',
+          bitmap.height,
+          'bounds:',
+          bounds
+        );
 
-        // Convert ImageBitmap to data URL for BitmapLayer
+        // Convert ImageBitmap to PNG data URL (format BitmapLayer supports)
         const dataUrl = await imageBitmapToDataUrl(bitmap);
-        console.log('[SampleClimateMvtLayer] Data URL created, length:', dataUrl.length);
 
         if (isMounted) {
           setDecodedImageUrl(dataUrl);
-          setIsDecoding(false);
+          setBoundsFromGeoTIFF(bounds);
         }
 
         bitmap.close(); // Free memory
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
         console.error('[SampleClimateMvtLayer] Decode error:', errorMsg);
+        if (error instanceof Error) {
+          console.error('[SampleClimateMvtLayer] Stack:', error.stack);
+        }
 
         if (isMounted) {
           setDecodeError(errorMsg);
-          setIsDecoding(false);
         }
       }
     };
@@ -98,22 +119,22 @@ export function SampleClimateMvtLayer() {
     return () => {
       isMounted = false;
     };
-  }, [imageUrl, bandMode, isHydrated]);
+  }, [imageUrl, isHydrated]);
 
-  // Create BitmapLayer with decoded image
+  // Use bounds from GeoTIFF if available
+  const layerBounds = boundsFromGeoTIFF;
+
+  // Create BitmapLayer with decoded image and extracted bounds
   const layer = useMemo(
     () =>
       new BitmapLayer({
         id: 'sample-climate-mvt',
-        image: decodedImageUrl, // Can be undefined, which BitmapLayer should handle gracefully
-        bounds,
+        image: decodedImageUrl,
+        bounds: layerBounds || undefined,
         pickable: true,
         opacity: 0.7,
-        desaturate: 0,
         onClick: (info) => {
-          // Extract pixel value from the decoded image
           if (info.color) {
-            // For grayscale, R=G=B, so just use R channel
             const pixelValue = info.color[0];
             setHoveredValue(pixelValue);
             console.log('[SampleClimateMvtLayer] Clicked pixel value:', pixelValue);
@@ -127,13 +148,13 @@ export function SampleClimateMvtLayer() {
         },
         updateTriggers: {
           image: [decodedImageUrl],
-          bounds: [bounds]
+          bounds: [layerBounds]
         }
       }),
-    [decodedImageUrl, bounds, setHoveredValue]
+    [decodedImageUrl, layerBounds, setHoveredValue]
   );
 
-  // Only register layer if we have a valid layer instance
+  // Register layer with smart layer system
   const { setVisible: setLayerVisible } = useSmartLayer({
     id: 'sample-climate-mvt',
     layer,
@@ -148,11 +169,6 @@ export function SampleClimateMvtLayer() {
   // Don't render layer until after hydration
   if (!isHydrated) {
     return null;
-  }
-
-  // Debug: Show decode status
-  if (isDecoding) {
-    console.log('[SampleClimateMvtLayer] Decoding GeoTIFF...', { imageUrl, bandMode });
   }
 
   if (decodeError) {
