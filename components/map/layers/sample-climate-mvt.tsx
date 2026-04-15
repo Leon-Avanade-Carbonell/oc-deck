@@ -155,7 +155,7 @@ export function SampleClimateMvtLayer() {
       pickable: true,
       opacity: 1.0,
       tintColor: [255, 255, 255],
-      desaturate: 0,
+      desaturate: 0.2,
       onClick: (info) => {
         if (info.color) {
           const pixelValue = info.color[0];

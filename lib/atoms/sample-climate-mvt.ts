@@ -2,6 +2,7 @@ import { atom } from 'jotai';
 import { mapZoomAtom } from '@/lib/atoms/map';
 
 export type BandMode = 'rgb' | 'raw';
+export type Colormap = 'viridis' | 'plasma' | 'inferno' | 'magma' | 'cividis';
 
 /**
  * sampleClimateMvtVariableAtom
@@ -33,6 +34,17 @@ export const sampleClimateMvtAvailableTimesAtom = atom<string[]>([
  * Selected time (date string, matching availableTimes format)
  */
 export const sampleClimateMvtTimeAtom = atom<string>('1989-01-16');
+
+/**
+ * sampleClimateMvtColormapAtom
+ * Selects the colormap for rendering the climate data visualization.
+ * - 'viridis': Standard perceptually uniform colormap (default)
+ * - 'plasma': High-contrast variant of viridis
+ * - 'inferno': Sequential colormap from dark to bright
+ * - 'magma': Sequential colormap emphasizing contrast
+ * - 'cividis': Optimized for colorblind accessibility
+ */
+export const sampleClimateMvtColormapAtom = atom<Colormap>('plasma');
 
 /**
  * sampleClimateMvtBandModeAtom
@@ -70,25 +82,28 @@ export const sampleClimateMvtZoomAtom = atom((get) => {
 
 /**
  * sampleClimateMvtImageUrlAtom
- * Dynamically computed image URL based on variable, time, and zoom level.
+ * Dynamically computed image URL based on variable, time, zoom level, and colormap.
  *
  * Backend serves pre-generated GeoTIFFs in Web Mercator (EPSG:3857) with
  * embedded georeferencing. DeckGL's BitmapLayer automatically reads the
  * projection and bounds from the GeoTIFF metadata.
  *
- * Example: `/api/climate-mvt/monthly_rain/1989-01-16/z3.tif`
+ * Colormap is passed as a query parameter to control the visualization rendering.
+ *
+ * Example: `/api/climate-mvt/monthly_rain/1989-01-16/z3.tif?colormap=viridis`
  */
 export const sampleClimateMvtImageUrlAtom = atom((get) => {
   const variable = get(sampleClimateMvtVariableAtom);
   const time = get(sampleClimateMvtTimeAtom);
   const zoom = get(sampleClimateMvtZoomAtom);
+  const colormap = get(sampleClimateMvtColormapAtom);
 
   // Extract only the date part if time includes a timestamp
   const dateOnly = time.split(' ')[0];
   const encodedTime = encodeURIComponent(dateOnly);
 
-  // Construct URL through Next.js API proxy
-  return `/api/climate-mvt/${variable}/${encodedTime}/z${zoom}.tif`;
+  // Construct URL through Next.js API proxy with colormap query parameter
+  return `/api/climate-mvt/${variable}/${encodedTime}/z${zoom}.tif?colormap=${colormap}`;
 });
 
 /**

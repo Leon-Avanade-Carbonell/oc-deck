@@ -21,8 +21,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
     const pathSegments = pathParams.path || [];
     const relativePath = pathSegments.join('/');
 
-    // Construct the full backend URL
-    const backendUrl = `${BACKEND_API}/climate-mvt/${relativePath}`;
+    // Extract query parameters from the request URL
+    const url = new URL(request.url);
+    const queryString = url.search; // Includes the ? if present
+
+    // Construct the full backend URL with query parameters
+    const backendUrl = `${BACKEND_API}/climate-mvt/${relativePath}${queryString}`;
 
     console.log(`[Climate MVT Proxy] GET ${backendUrl}`);
 

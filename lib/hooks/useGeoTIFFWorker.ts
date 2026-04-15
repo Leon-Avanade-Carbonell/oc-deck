@@ -20,6 +20,8 @@ interface PendingRequest {
 export function useGeoTIFFWorker() {
   const workerRef = useRef<Worker | null>(null);
   const pendingRequestsRef = useRef<Map<string, PendingRequest>>(new Map());
+  const cancelledRequestsRef = useRef<Set<string>>(new Set());
+  const currentRequestIdRef = useRef<string | null>(null);
   const requestIdCounterRef = useRef(0);
 
   // Initialize worker on mount
@@ -41,6 +43,13 @@ export function useGeoTIFFWorker() {
 
         console.log('[useGeoTIFFWorker] Received response from worker:', id, 'success:', success);
 
+        // If request was cancelled, ignore response silently
+        if (cancelledRequestsRef.current.has(id)) {
+          cancelledRequestsRef.current.delete(id);
+          console.log('[useGeoTIFFWorker] Ignoring response for cancelled request:', id);
+          return;
+        }
+
         const pendingRequest = pendingRequestsRef.current.get(id);
         if (!pendingRequest) {
           console.warn('[useGeoTIFFWorker] Received response for unknown request:', id);
@@ -50,6 +59,7 @@ export function useGeoTIFFWorker() {
         // Clear timeout
         clearTimeout(pendingRequest.timeout);
         pendingRequestsRef.current.delete(id);
+        currentRequestIdRef.current = null;
 
         if (success && bitmap && bounds) {
           pendingRequest.resolve({ bitmap, bounds });
@@ -90,6 +100,7 @@ export function useGeoTIFFWorker() {
         reject(new Error('Worker terminated'));
       });
       pendingRequestsRef.current.clear();
+      cancelledRequestsRef.current.clear();
     };
   }, []);
 
@@ -103,12 +114,28 @@ export function useGeoTIFFWorker() {
       const id = `decode-${++requestIdCounterRef.current}`;
       console.log('[useGeoTIFFWorker] Starting decode request:', id);
 
+      // Cancel any in-flight decode before starting new one (only 1 decode at a time)
+      if (currentRequestIdRef.current) {
+        console.log('[useGeoTIFFWorker] New request while one pending, cancelling:', currentRequestIdRef.current);
+        const prevId = currentRequestIdRef.current;
+        const prevRequest = pendingRequestsRef.current.get(prevId);
+        if (prevRequest) {
+          clearTimeout(prevRequest.timeout);
+          cancelledRequestsRef.current.add(prevId);
+          prevRequest.reject(new Error('Superseded by new decode request'));
+          pendingRequestsRef.current.delete(prevId);
+        }
+      }
+
+      currentRequestIdRef.current = id;
+
       return new Promise((resolve, reject) => {
-        // Set 30 second timeout
+        // Set 60 second timeout (z5 can be slow)
         const timeout = setTimeout(() => {
           pendingRequestsRef.current.delete(id);
-          reject(new Error('GeoTIFF decode timeout (30s)'));
-        }, 30000);
+          currentRequestIdRef.current = null;
+          reject(new Error('GeoTIFF decode timeout (60s)'));
+        }, 60000);
 
         // Store pending request
         pendingRequestsRef.current.set(id, { resolve, reject, timeout });
@@ -122,6 +149,7 @@ export function useGeoTIFFWorker() {
         } catch (error) {
           clearTimeout(timeout);
           pendingRequestsRef.current.delete(id);
+          currentRequestIdRef.current = null;
           reject(error);
         }
       });
@@ -130,13 +158,13 @@ export function useGeoTIFFWorker() {
   );
 
   // Cancel all pending decode requests (e.g. when URL changes before a decode completes).
-  // The worker may still finish its current decode, but the results will be ignored
-  // since the promises are already rejected.
+  // Mark cancelled requests so responses are silently dropped instead of warning.
   const cancelAll = useCallback(() => {
     if (pendingRequestsRef.current.size === 0) return;
     console.log('[useGeoTIFFWorker] Cancelling', pendingRequestsRef.current.size, 'pending request(s)');
-    pendingRequestsRef.current.forEach(({ reject, timeout }) => {
+    pendingRequestsRef.current.forEach(({ reject, timeout }, id) => {
       clearTimeout(timeout);
+      cancelledRequestsRef.current.add(id);
       reject(new Error('Decode cancelled'));
     });
     pendingRequestsRef.current.clear();
