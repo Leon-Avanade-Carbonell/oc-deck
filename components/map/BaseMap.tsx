@@ -83,8 +83,13 @@ export function BaseMap({ children, initialViewport, controls = DEFAULT_CONTROLS
   const mapStyle = BASETILES[basemapId].url;
   const viewport = { ...DEFAULT_VIEWPORT, ...initialViewport };
 
-  // Filter to only visible layers and extract the DeckGL layer instances
-  const visibleLayers = layers.filter((l) => l.visible).map((l) => l.layer);
+  // Pass ALL layers to DeckGL — visibility is controlled via each layer's own
+  // `visible` prop. Filtering layers out of the array causes DeckGL to finalize
+  // (release GPU resources for) the removed instance. Re-adding that same
+  // instance triggers "deck.gl: assertion failed" because the instance is marked
+  // as finalized internally. Keeping layers in the array at all times avoids
+  // this, and DeckGL simply skips rendering layers with `visible: false`.
+  const allLayers = layers.map((l) => l.layer);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -104,7 +109,7 @@ export function BaseMap({ children, initialViewport, controls = DEFAULT_CONTROLS
         pitchWithRotate={controls?.pitch ?? false}
         touchZoomRotate={controls?.zoom ?? true}
       >
-        <DeckGLOverlay layers={visibleLayers} />
+        <DeckGLOverlay layers={allLayers} />
         <MapContent>{children}</MapContent>
       </Map>
     </div>

@@ -5,14 +5,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { BitmapLayer } from '@deck.gl/layers';
 import { useSmartLayer } from '@/lib/hooks/useSmartLayer';
 import { useHydrationAware } from '@/lib/hooks/useHydrationAware';
-import { imageBitmapToDataUrl } from '@/lib/geotiff/decoder';
 import { useGeoTIFFWorker } from '@/lib/hooks/useGeoTIFFWorker';
 
 import {
   sampleClimateMvtImageUrlAtom,
   sampleClimateMvtHoveredValueAtom,
   sampleClimateMvtVisibleAtom,
-  sampleClimateMvtIsDecodingAtom
+  sampleClimateMvtIsDecodingAtom,
+  sampleClimateMvtIsManualLoadingAtom
 } from '@/lib/atoms/sample-climate-mvt';
 
 /**
@@ -24,8 +24,8 @@ import {
  * 1. Fetch GeoTIFF from backend (WGS84, EPSG:4326)
  * 2. Send to Web Worker for decoding (off main thread)
  * 3. Worker extracts ImageBitmap and WGS84 bounds via image.getBoundingBox()
- * 4. Convert ImageBitmap to PNG data URL (format BitmapLayer supports)
- * 5. Pass image URL + WGS84 bounds to BitmapLayer
+ * 4. Pass ImageBitmap + WGS84 bounds directly to BitmapLayer
+ *    (BitmapLayer accepts ImageBitmap natively — no canvas PNG encode needed)
  *
  * Backend provides:
  * - GeoTIFFs reprojected to WGS84 (EPSG:4326)
@@ -46,19 +46,21 @@ export function SampleClimateMvtLayer() {
   const [, setHoveredValue] = useAtom(sampleClimateMvtHoveredValueAtom);
   const [visible] = useAtom(sampleClimateMvtVisibleAtom);
   const setIsDecoding = useSetAtom(sampleClimateMvtIsDecodingAtom);
+  const setIsManualLoading = useSetAtom(sampleClimateMvtIsManualLoadingAtom);
   const { decode: decodeGeoTIFF, cancelAll: cancelWorkerRequests } = useGeoTIFFWorker();
 
   // State for decoded image and bounds
-  const [decodedImageUrl, setDecodedImageUrl] = useState<string | null>(null);
+  const [decodedBitmap, setDecodedBitmap] = useState<ImageBitmap | null>(null);
   const [boundsFromGeoTIFF, setBoundsFromGeoTIFF] = useState<[number, number, number, number] | null>(null);
   const [decodeError, setDecodeError] = useState<string | null>(null);
 
   // Decode GeoTIFF when URL changes
   useEffect(() => {
     if (!isHydrated || !imageUrl) {
-      setDecodedImageUrl(null);
+      setDecodedBitmap(null);
       setBoundsFromGeoTIFF(null);
       setIsDecoding(false);
+      setIsManualLoading(false);
       return;
     }
 
@@ -105,12 +107,10 @@ export function SampleClimateMvtLayer() {
           bounds
         );
 
-        // Convert ImageBitmap to PNG data URL (format BitmapLayer supports)
-        const dataUrl = await imageBitmapToDataUrl(bitmap);
-        bitmap.close(); // Free memory
-
+        // BitmapLayer accepts ImageBitmap directly — no canvas PNG encoding needed.
+        // deck.gl uploads the bitmap to GPU texture during its next render cycle.
         if (isMounted) {
-          setDecodedImageUrl(dataUrl);
+          setDecodedBitmap(bitmap);
           setBoundsFromGeoTIFF(bounds);
         }
       } catch (error) {
@@ -132,6 +132,7 @@ export function SampleClimateMvtLayer() {
       } finally {
         if (isMounted) {
           setIsDecoding(false);
+          setIsManualLoading(false);
         }
       }
     };
@@ -143,15 +144,19 @@ export function SampleClimateMvtLayer() {
       abortController.abort(); // cancel in-flight fetch
       cancelWorkerRequests(); // reject any pending worker promises
     };
-  }, [imageUrl, isHydrated, decodeGeoTIFF, cancelWorkerRequests, setIsDecoding]);
+  }, [imageUrl, isHydrated, decodeGeoTIFF, cancelWorkerRequests, setIsDecoding, setIsManualLoading]);
 
-  // Create BitmapLayer with decoded image and extracted bounds
-  // When image is not ready yet, create a layer with default values that won't render
+  // Create BitmapLayer with decoded image and extracted bounds.
+  // `visible` is included in the layer props — DeckGL keeps the layer alive but
+  // skips rendering when false. This prevents the instance from being finalized
+  // and avoids "deck.gl: assertion failed" on toggle off → on.
+  // Fallback bounds [0,0,1,1] is a valid degenerate box (used only when image is null).
   const layer = useMemo(() => {
     return new BitmapLayer({
       id: 'sample-climate-mvt',
-      image: decodedImageUrl,
-      bounds: boundsFromGeoTIFF ?? ([1, 0, 0, 1] as [number, number, number, number]),
+      visible,
+      image: decodedBitmap,
+      bounds: boundsFromGeoTIFF ?? ([0, 0, 1, 1] as [number, number, number, number]),
       pickable: true,
       opacity: 1.0,
       tintColor: [255, 255, 255],
@@ -170,11 +175,11 @@ export function SampleClimateMvtLayer() {
         }
       },
       updateTriggers: {
-        image: [decodedImageUrl],
+        image: [decodedBitmap],
         bounds: [boundsFromGeoTIFF]
       }
     });
-  }, [decodedImageUrl, boundsFromGeoTIFF, setHoveredValue]);
+  }, [visible, decodedBitmap, boundsFromGeoTIFF, setHoveredValue]);
 
   // Register layer with smart layer system
   const { setVisible: setLayerVisible } = useSmartLayer({

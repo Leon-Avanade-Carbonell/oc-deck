@@ -125,3 +125,12 @@ export const sampleClimateMvtHoveredValueAtom = atom<number | null>(null);
  * time step is only triggered after this becomes false.
  */
 export const sampleClimateMvtIsDecodingAtom = atom<boolean>(false);
+
+/**
+ * sampleClimateMvtIsManualLoadingAtom
+ * True while a manual navigation (prev/next/select) is loading.
+ * Written by the time picker's event handlers; cleared by the layer
+ * when decode completes. Disables play + select during manual loads
+ * without interfering with zoom-triggered decodes.
+ */
+export const sampleClimateMvtIsManualLoadingAtom = atom<boolean>(false);
