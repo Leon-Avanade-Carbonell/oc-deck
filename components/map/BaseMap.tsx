@@ -3,7 +3,7 @@
 import React from 'react';
 import Map from 'react-map-gl/maplibre';
 import { useAtomValue } from 'jotai';
-import { basemapAtom, layersAtom } from '@/lib/atoms/map';
+import { basemapAtom, layersAtom, mapZoomLockedAtom } from '@/lib/atoms/map';
 import { BASETILES } from '@/lib/map/basetiles';
 import { DEFAULT_CONTROLS, DEFAULT_VIEWPORT } from '@/lib/map/config';
 import { DeckGLOverlay } from './DeckGLOverlay';
@@ -80,8 +80,10 @@ function MapContent({ children }: { children: React.ReactNode }) {
 export function BaseMap({ children, initialViewport, controls = DEFAULT_CONTROLS }: BaseMapProps) {
   const basemapId = useAtomValue(basemapAtom);
   const layers = useAtomValue(layersAtom);
+  const zoomLocked = useAtomValue(mapZoomLockedAtom);
   const mapStyle = BASETILES[basemapId].url;
   const viewport = { ...DEFAULT_VIEWPORT, ...initialViewport };
+  const zoomEnabled = !zoomLocked && (controls?.zoom ?? true);
 
   // Pass ALL layers to DeckGL — visibility is controlled via each layer's own
   // `visible` prop. Filtering layers out of the array causes DeckGL to finalize
@@ -104,10 +106,10 @@ export function BaseMap({ children, initialViewport, controls = DEFAULT_CONTROLS
         mapStyle={mapStyle}
         style={{ width: '100%', height: '100%' }}
         dragPan={controls?.pan ?? true}
-        scrollZoom={controls?.zoom ?? true}
+        scrollZoom={zoomEnabled}
         dragRotate={controls?.rotate ?? false}
         pitchWithRotate={controls?.pitch ?? false}
-        touchZoomRotate={controls?.zoom ?? true}
+        touchZoomRotate={zoomEnabled}
       >
         <DeckGLOverlay layers={allLayers} />
         <MapContent>{children}</MapContent>

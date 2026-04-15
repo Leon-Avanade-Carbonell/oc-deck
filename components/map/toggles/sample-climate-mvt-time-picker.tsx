@@ -1,23 +1,16 @@
 'use client';
 
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { useMemo, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
 import { useHydrationAware } from '@/lib/hooks/useHydrationAware';
 
 import {
   sampleClimateMvtTimeAtom,
   sampleClimateMvtAvailableTimesAtom,
-  sampleClimateMvtIsDecodingAtom,
-  sampleClimateMvtIsManualLoadingAtom
+  sampleClimateMvtIsDecodingAtom
 } from '@/lib/atoms/sample-climate-mvt';
 
 /**
@@ -26,16 +19,18 @@ import {
  * Time navigation for the MVT climate layer with play/pause and manual controls.
  * - Play: sequential stepping — waits for each frame to fully decode before
  *   advancing, then pauses 1200ms before moving to the next time step.
- * - Previous/Next: manual navigation; disables play + select while loading.
- * - Select: direct jump to any available time.
+ * - Previous/Next/Select: manual navigation.
+ *
+ * Controls are disabled when `isDecoding && !isPlaying`:
+ * - Manual step: isPlaying=false → all controls disabled while loading ✓
+ * - Zoom-triggered decode: isPlaying=false → all controls disabled ✓
+ * - During play: isPlaying=true → controls NOT disabled; pause remains clickable ✓
  */
 export function SampleClimateMvtTimePicker() {
   const isHydrated = useHydrationAware();
   const [currentTime, setCurrentTime] = useAtom(sampleClimateMvtTimeAtom);
   const [availableTimes] = useAtom(sampleClimateMvtAvailableTimesAtom);
   const isDecoding = useAtomValue(sampleClimateMvtIsDecodingAtom);
-  const isManualLoading = useAtomValue(sampleClimateMvtIsManualLoadingAtom);
-  const setIsManualLoading = useSetAtom(sampleClimateMvtIsManualLoadingAtom);
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Find current index
@@ -64,16 +59,19 @@ export function SampleClimateMvtTimePicker() {
     return null;
   }
 
+  // Disable all controls when a decode is in flight and we're not in play mode.
+  // During play, isPlaying=true so controls stay enabled (pause remains clickable).
+  const controlsDisabled = isDecoding && !isPlaying;
+  const tooFewTimes = availableTimes.length <= 1;
+
   const handlePrevious = () => {
     setIsPlaying(false);
-    setIsManualLoading(true);
     const prevIndex = currentIndex > 0 ? currentIndex - 1 : availableTimes.length - 1;
     setCurrentTime(availableTimes[prevIndex]);
   };
 
   const handleNext = () => {
     setIsPlaying(false);
-    setIsManualLoading(true);
     const nextIndex = (currentIndex + 1) % availableTimes.length;
     setCurrentTime(availableTimes[nextIndex]);
   };
@@ -84,7 +82,6 @@ export function SampleClimateMvtTimePicker() {
 
   const handleSelectTime = (value: string) => {
     setIsPlaying(false);
-    setIsManualLoading(true);
     setCurrentTime(value);
   };
 
@@ -95,7 +92,7 @@ export function SampleClimateMvtTimePicker() {
           variant="outline"
           size="icon"
           onClick={handlePrevious}
-          disabled={availableTimes.length <= 1 || isManualLoading}
+          disabled={tooFewTimes || controlsDisabled}
           title="Previous time"
           className="h-8 w-8"
         >
@@ -106,7 +103,7 @@ export function SampleClimateMvtTimePicker() {
           variant="outline"
           size="icon"
           onClick={handlePlayPause}
-          disabled={availableTimes.length <= 1 || isManualLoading}
+          disabled={tooFewTimes || controlsDisabled}
           title={isPlaying ? 'Pause' : 'Play'}
           className={`h-8 w-8 ${isPlaying ? 'bg-accent text-accent-foreground' : ''}`}
         >
@@ -117,14 +114,14 @@ export function SampleClimateMvtTimePicker() {
           variant="outline"
           size="icon"
           onClick={handleNext}
-          disabled={availableTimes.length <= 1 || isManualLoading}
+          disabled={tooFewTimes || controlsDisabled}
           title="Next time"
           className="h-8 w-8"
         >
           <ChevronRight size={16} />
         </Button>
 
-        <Select value={currentTime} onValueChange={handleSelectTime} disabled={isManualLoading}>
+        <Select value={currentTime} onValueChange={handleSelectTime} disabled={tooFewTimes || controlsDisabled}>
           <SelectTrigger className="h-8 w-36 text-sm">
             <SelectValue />
           </SelectTrigger>

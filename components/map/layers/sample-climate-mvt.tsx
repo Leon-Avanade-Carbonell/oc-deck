@@ -6,13 +6,13 @@ import { BitmapLayer } from '@deck.gl/layers';
 import { useSmartLayer } from '@/lib/hooks/useSmartLayer';
 import { useHydrationAware } from '@/lib/hooks/useHydrationAware';
 import { useGeoTIFFWorker } from '@/lib/hooks/useGeoTIFFWorker';
+import { mapZoomLockedAtom } from '@/lib/atoms/map';
 
 import {
   sampleClimateMvtImageUrlAtom,
   sampleClimateMvtHoveredValueAtom,
   sampleClimateMvtVisibleAtom,
-  sampleClimateMvtIsDecodingAtom,
-  sampleClimateMvtIsManualLoadingAtom
+  sampleClimateMvtIsDecodingAtom
 } from '@/lib/atoms/sample-climate-mvt';
 
 /**
@@ -45,9 +45,15 @@ export function SampleClimateMvtLayer() {
   const [imageUrl] = useAtom(sampleClimateMvtImageUrlAtom);
   const [, setHoveredValue] = useAtom(sampleClimateMvtHoveredValueAtom);
   const [visible] = useAtom(sampleClimateMvtVisibleAtom);
-  const setIsDecoding = useSetAtom(sampleClimateMvtIsDecodingAtom);
-  const setIsManualLoading = useSetAtom(sampleClimateMvtIsManualLoadingAtom);
+  const [isDecoding, setIsDecoding] = useAtom(sampleClimateMvtIsDecodingAtom);
+  const setMapZoomLocked = useSetAtom(mapZoomLockedAtom);
   const { decode: decodeGeoTIFF, cancelAll: cancelWorkerRequests } = useGeoTIFFWorker();
+
+  // Lock map zoom while decoding — prevents zoom changes from triggering
+  // additional fetches while a decode is already in flight.
+  useEffect(() => {
+    setMapZoomLocked(isDecoding);
+  }, [isDecoding, setMapZoomLocked]);
 
   // State for decoded image and bounds
   const [decodedBitmap, setDecodedBitmap] = useState<ImageBitmap | null>(null);
@@ -60,7 +66,6 @@ export function SampleClimateMvtLayer() {
       setDecodedBitmap(null);
       setBoundsFromGeoTIFF(null);
       setIsDecoding(false);
-      setIsManualLoading(false);
       return;
     }
 
@@ -132,7 +137,6 @@ export function SampleClimateMvtLayer() {
       } finally {
         if (isMounted) {
           setIsDecoding(false);
-          setIsManualLoading(false);
         }
       }
     };
@@ -144,7 +148,7 @@ export function SampleClimateMvtLayer() {
       abortController.abort(); // cancel in-flight fetch
       cancelWorkerRequests(); // reject any pending worker promises
     };
-  }, [imageUrl, isHydrated, decodeGeoTIFF, cancelWorkerRequests, setIsDecoding, setIsManualLoading]);
+  }, [imageUrl, isHydrated, decodeGeoTIFF, cancelWorkerRequests, setIsDecoding]);
 
   // Create BitmapLayer with decoded image and extracted bounds.
   // `visible` is included in the layer props — DeckGL keeps the layer alive but
@@ -160,7 +164,7 @@ export function SampleClimateMvtLayer() {
       pickable: true,
       opacity: 1.0,
       tintColor: [255, 255, 255],
-      desaturate: 0.2,
+      desaturate: 0,
       onClick: (info) => {
         if (info.color) {
           const pixelValue = info.color[0];

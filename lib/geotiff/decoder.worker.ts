@@ -126,13 +126,26 @@ async function decodeGeoTIFFInWorker(
     const maxValue = isUint16 ? 65535 : 255;
     console.log('[Worker] Data is', isUint16 ? '16-bit' : '8-bit', '(max value:', maxValue, ')');
 
+    // Sample alpha values to diagnose transparency issues
+    const alphaSample = Array.from(alpha.slice(0, 20)).join(', ');
+    let alphaMin = Infinity;
+    let alphaMax = 0;
+    for (let i = 0; i < alpha.length; i++) {
+      if (alpha[i] < alphaMin) alphaMin = alpha[i];
+      if (alpha[i] > alphaMax) alphaMax = alpha[i];
+    }
+    console.log(`[Worker] Alpha range: min=${alphaMin}, max=${alphaMax}, sample=[${alphaSample}]`);
+
     console.log('[Worker] Filling ImageData with pixel values and alpha transparency...');
     let transparentPixels = 0;
     for (let i = 0; i < width * height; i++) {
       const r = isUint16 ? Math.round((red[i] / maxValue) * 255) : red[i];
       const g = isUint16 ? Math.round((green[i] / maxValue) * 255) : green[i];
       const b = isUint16 ? Math.round((blue[i] / maxValue) * 255) : blue[i];
-      const a = alpha[i];
+      // Threshold alpha to binary: any non-zero value = valid data = fully opaque.
+      // Prevents semi-transparent washout when the backend encodes data magnitude
+      // into the alpha channel instead of using a strict NaN mask.
+      const a = alpha[i] > 0 ? 255 : 0;
 
       data[i * 4] = r;
       data[i * 4 + 1] = g;

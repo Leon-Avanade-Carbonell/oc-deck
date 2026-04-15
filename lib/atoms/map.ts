@@ -51,3 +51,11 @@ export const basemapAtom = atom<BasemapId>(DEFAULT_BASEMAP);
  * Read by CurrentLocationLayer to position the scatterplot.
  */
 export const currentLocationAtom = atom<[number, number] | null>(null);
+
+/**
+ * When true, scroll zoom and pinch-to-zoom are disabled on the map.
+ * Written by layers that are actively decoding data — prevents zoom changes
+ * from triggering additional fetches while a decode is already in flight.
+ * Read by BaseMap and applied to the MapLibre Map interaction handlers.
+ */
+export const mapZoomLockedAtom = atom<boolean>(false);

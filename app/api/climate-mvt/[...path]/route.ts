@@ -34,7 +34,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
-        Accept: request.headers.get('Accept') || '*/*'
+        Accept: request.headers.get('Accept') || 'image/tiff',
+        'User-Agent': request.headers.get('User-Agent') || 'OpenCode'
       }
     });
 

@@ -5,6 +5,8 @@ import { BasemapSelector } from '@/components/map/BasemapSelector';
 import { SampleClimateMvtToggle } from '@/components/map/toggles/sample-climate-mvt-toggle';
 import { SampleClimateMvtBandModeToggle } from '@/components/map/toggles/sample-climate-mvt-band-mode-toggle';
 import { SampleClimateMvtTimePicker } from '@/components/map/toggles/sample-climate-mvt-time-picker';
+import { SampleClimateMvtColormapSelector } from '@/components/map/toggles/sample-climate-mvt-colormap-selector';
+import { SampleClimateMvtStretchSelector } from '@/components/map/toggles/sample-climate-mvt-stretch-selector';
 import { CurrentLocationLayer } from '@/components/map/layers/CurrentLocationLayer';
 import { SampleClimateMvtLayer } from '@/components/map/layers/sample-climate-mvt';
 import { SampleClimateTimeSlider } from '@/components/map/climate/sample-climate-time-slider';
@@ -33,6 +35,12 @@ export default function MapPage() {
         <SampleClimateMvtToggle />
         <SampleClimateMvtBandModeToggle />
       </div>
+
+      {/* Climate MVT colormap selector — bottom-right, above time picker */}
+      <SampleClimateMvtColormapSelector />
+
+      {/* Climate MVT stretch selector — bottom-right, above time picker */}
+      <SampleClimateMvtStretchSelector />
 
       {/* Climate MVT time picker — bottom-right */}
       <SampleClimateMvtTimePicker />
