@@ -14,6 +14,8 @@ export interface LayerConfig {
   visible: boolean;
   /** Human-readable label shown in layer control UIs */
   label: string;
+  /** Stacking order — higher values render on top. Layers are sorted by this before rendering. */
+  order?: number;
 }
 
 /**

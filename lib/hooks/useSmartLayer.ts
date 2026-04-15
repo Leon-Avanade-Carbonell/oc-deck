@@ -20,6 +20,8 @@ export interface SmartLayerConfig {
   layer: Layer<any>;
   /** Human-readable label shown in layer control UIs. */
   label: string;
+  /** Stacking order for this layer — higher values render on top. Defaults to 0. */
+  order?: number;
 }
 
 /**
@@ -100,19 +102,19 @@ export interface SmartLayerHandle {
  * ```
  */
 export function useSmartLayer(config: SmartLayerConfig): SmartLayerHandle {
-  const { id, layer, label } = config;
+  const { id, layer, label, order = 0 } = config;
   const setLayers = useSetAtom(layersAtom);
 
   // Register layer on mount; unregister on unmount
   useEffect(() => {
-    setLayers((prev) => [...prev.filter((l) => l.id !== id), { id, layer, visible: true, label }]);
+    setLayers((prev) => [...prev.filter((l) => l.id !== id), { id, layer, visible: true, label, order }]);
 
     return () => {
       setLayers((prev) => prev.filter((l) => l.id !== id));
     };
-    // Only re-register when id or label changes (not on every layer update)
+    // Only re-register when id, label, or order changes (not on every layer update)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, label]);
+  }, [id, label, order]);
 
   // Update the layer instance in the atom when it changes
   useEffect(() => {

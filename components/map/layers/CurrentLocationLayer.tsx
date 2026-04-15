@@ -73,7 +73,8 @@ export function CurrentLocationLayer() {
   useSmartLayer({
     id: LAYER_ID,
     layer,
-    label: 'Current Location'
+    label: 'Current Location',
+    order: 1000 // Ensure this layer always renders on top
   });
 
   return null;

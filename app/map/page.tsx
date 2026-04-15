@@ -3,7 +3,6 @@
 import dynamic from 'next/dynamic';
 import { BasemapSelector } from '@/components/map/BasemapSelector';
 import { SampleClimateMvtToggle } from '@/components/map/toggles/sample-climate-mvt-toggle';
-import { SampleClimateMvtBandModeToggle } from '@/components/map/toggles/sample-climate-mvt-band-mode-toggle';
 import { SampleClimateMvtTimePicker } from '@/components/map/toggles/sample-climate-mvt-time-picker';
 import { SampleClimateMvtColormapSelector } from '@/components/map/toggles/sample-climate-mvt-colormap-selector';
 import { SampleClimateMvtStretchSelector } from '@/components/map/toggles/sample-climate-mvt-stretch-selector';
@@ -33,7 +32,6 @@ export default function MapPage() {
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-3">
         <BasemapSelector />
         <SampleClimateMvtToggle />
-        <SampleClimateMvtBandModeToggle />
       </div>
 
       {/* Climate MVT colormap selector — bottom-right, above time picker */}

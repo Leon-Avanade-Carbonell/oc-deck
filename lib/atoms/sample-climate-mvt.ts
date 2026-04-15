@@ -1,7 +1,6 @@
 import { atom } from 'jotai';
 import { mapZoomAtom } from '@/lib/atoms/map';
 
-export type BandMode = 'rgb' | 'raw';
 export type Colormap =
   | 'vanimo'
   | 'berlin'
@@ -109,18 +108,6 @@ export const sampleClimateMvtTimeAtom = atom<string>('1989-01-16');
  * - Extended rainbow: turbo (for depth/disparity data)
  */
 export const sampleClimateMvtColormapAtom = atom<Colormap>('Blues');
-
-/**
- * sampleClimateMvtBandModeAtom
- * Controls which GeoTIFF bands to display
- * - 'rgb': Display bands 0-2 (colored visual representation)
- * - 'raw': Display band 4 (raw measurement values as grayscale)
- *
- * Note: Backend now serves fully-rendered GeoTIFFs. This atom is kept for
- * backwards compatibility with the band mode toggle UI, but is not used
- * by the layer rendering logic. Future: consider removing the toggle.
- */
-export const sampleClimateMvtBandModeAtom = atom<BandMode>('rgb');
 
 /**
  * sampleClimateMvtZoomAtom (derived)

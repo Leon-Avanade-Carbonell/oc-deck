@@ -83,7 +83,9 @@ export function BaseMap({ children, initialViewport, controls = DEFAULT_CONTROLS
   const zoomLocked = useAtomValue(mapZoomLockedAtom);
   const mapStyle = BASETILES[basemapId].url;
   const viewport = { ...DEFAULT_VIEWPORT, ...initialViewport };
-  const zoomEnabled = !zoomLocked && (controls?.zoom ?? true);
+  // Allow scroll zoom always; only disable touch/pinch zoom when loading
+  const scrollZoomEnabled = controls?.zoom ?? true;
+  const touchZoomEnabled = !zoomLocked && (controls?.zoom ?? true);
 
   // Pass ALL layers to DeckGL — visibility is controlled via each layer's own
   // `visible` prop. Filtering layers out of the array causes DeckGL to finalize
@@ -91,7 +93,9 @@ export function BaseMap({ children, initialViewport, controls = DEFAULT_CONTROLS
   // instance triggers "deck.gl: assertion failed" because the instance is marked
   // as finalized internally. Keeping layers in the array at all times avoids
   // this, and DeckGL simply skips rendering layers with `visible: false`.
-  const allLayers = layers.map((l) => l.layer);
+  // Layers are sorted by their `order` property (ascending), so higher order values
+  // render on top.
+  const allLayers = layers.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((l) => l.layer);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -106,10 +110,10 @@ export function BaseMap({ children, initialViewport, controls = DEFAULT_CONTROLS
         mapStyle={mapStyle}
         style={{ width: '100%', height: '100%' }}
         dragPan={controls?.pan ?? true}
-        scrollZoom={zoomEnabled}
+        scrollZoom={scrollZoomEnabled}
         dragRotate={controls?.rotate ?? false}
         pitchWithRotate={controls?.pitch ?? false}
-        touchZoomRotate={zoomEnabled}
+        touchZoomRotate={touchZoomEnabled}
       >
         <DeckGLOverlay layers={allLayers} />
         <MapContent>{children}</MapContent>
