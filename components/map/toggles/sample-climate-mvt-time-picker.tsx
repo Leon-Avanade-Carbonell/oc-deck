@@ -19,7 +19,7 @@ import {
  *
  * Time navigation for the MVT climate layer with play/pause and manual controls.
  * - Play: sequential stepping — waits for each frame to fully decode before
- *   advancing, then pauses 1200ms before moving to the next time step.
+ *   advancing, then pauses 500ms before moving to the next time step.
  * - Previous/Next/Select: manual navigation.
  *
  * Controls are disabled when `isDecoding && !isPlaying`:
@@ -57,7 +57,7 @@ export function SampleClimateMvtTimePicker() {
         const idx = availableTimes.indexOf(prev);
         return availableTimes[(idx + 1) % availableTimes.length];
       });
-    }, 1200);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [isPlaying, isDecoding, availableTimes, setCurrentTime, currentTime]);
