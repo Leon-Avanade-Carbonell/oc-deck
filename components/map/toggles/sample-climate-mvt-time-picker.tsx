@@ -3,6 +3,7 @@
 import { useAtom, useAtomValue } from 'jotai';
 import { useMemo, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
 import { useHydrationAware } from '@/lib/hooks/useHydrationAware';
@@ -146,7 +147,27 @@ export function SampleClimateMvtTimePicker() {
 
       {/* Text Info */}
       <div className="shrink-0 flex flex-col items-end min-w-[120px]">
-        <div className="text-sm font-medium whitespace-nowrap">{currentTime}</div>
+        <div className="text-sm font-medium whitespace-nowrap">
+          <Select
+            value={currentTime}
+            onValueChange={(val) => {
+              setIsPlaying(false);
+              setCurrentTime(val);
+            }}
+            disabled={tooFewTimes || controlsDisabled}
+          >
+            <SelectTrigger className="h-auto w-auto border-0 bg-transparent p-0 m-0 shadow-none focus:ring-0 hover:bg-transparent [&_svg]:hidden font-medium text-sm text-right justify-end gap-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-64">
+              {availableTimes.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="text-xs text-muted-foreground whitespace-nowrap">
           {currentIndex + 1} / {availableTimes.length}
         </div>
