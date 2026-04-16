@@ -156,12 +156,12 @@ export function SampleClimateMvtTimePicker() {
             }}
             disabled={tooFewTimes || controlsDisabled}
           >
-            <SelectTrigger className="h-auto w-auto border-0 bg-transparent p-0 m-0 shadow-none focus:ring-0 hover:bg-transparent [&_svg]:hidden font-medium text-sm text-right justify-end gap-0">
+            <SelectTrigger className="h-auto w-auto border-0 bg-transparent p-0 m-0 shadow-none focus:ring-0 hover:bg-transparent [&_svg]:hidden font-medium text-sm text-right justify-end gap-0 h-5">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="max-h-64">
+            <SelectContent className="max-h-[300px]">
               {availableTimes.map((t) => (
-                <SelectItem key={t} value={t}>
+                <SelectItem key={t} value={t} className="text-sm cursor-pointer">
                   {t}
                 </SelectItem>
               ))}
