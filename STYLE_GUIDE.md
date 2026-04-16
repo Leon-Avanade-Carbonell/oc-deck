@@ -237,3 +237,206 @@ bun x shadcn@latest add component-name
 ```
 
 The component will automatically inherit your theme colors.
+
+## Map UI & Theming
+
+### Overview
+
+Map components (controls, panels, overlays) must follow specific structural and visual conventions to maintain consistency with the project's warm-gray newspaper palette and to ensure proper layering over the MapLibre GL canvas.
+
+### Structural Rules for Map Controls
+
+#### Top-Left Control Panel (MapControlsPanel)
+
+All persistent map controls should be consolidated into a unified `MapControlsPanel` component docked to the top-left corner:
+
+- **Basemap Selector**: Allows users to switch between map tile styles
+- **Layer Toggles**: Visibility controls for map layers (e.g., eye icon for climate data)
+- **Layer Settings**: Advanced options like colormap, stretch, and opacity
+
+The panel must:
+
+- Be collapsible/expandable via a toggle button (menu icon)
+- Use **absolute positioning** with `top-4 left-4 z-10` for the toggle button
+- Render the controls inside a ShadCN **Card** with `z-10` for proper layering
+- Be visible by default; users can collapse it to reduce visual clutter
+- Use hydration-aware rendering (`useHydrationAware()`) to prevent SSR mismatches
+
+```tsx
+// ✅ Correct - MapControlsPanel structure
+<div className="absolute top-4 left-4 z-10">
+  {/* Toggle button */}
+  <Button onClick={() => setIsOpen(!isOpen)}>{isOpen ? <X /> : <Menu />}</Button>
+
+  {/* Floating card */}
+  {isOpen && (
+    <Card className="absolute top-12 left-0 mt-2 p-4 bg-background/95 backdrop-blur-sm z-10">
+      {/* Controls grouped by section */}
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">MAP</label>
+          <BasemapSelector />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">LAYERS</label>
+          {/* Layer toggles */}
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">SETTINGS</label>
+          {/* Settings components */}
+        </div>
+      </div>
+    </Card>
+  )}
+</div>
+```
+
+#### Bottom-Center Time Picker
+
+The time picker/slider must be positioned at the bottom-center of the map:
+
+- Use **absolute positioning** with `bottom-4 left-1/2 -translate-x-1/2 z-10`
+- Wrap in a container to enable centering without affecting the component's internal layout
+- Maintain backdrop blur and semi-transparent background for visibility over map features
+
+```tsx
+// ✅ Correct - Time picker at bottom-center
+<div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+  <SampleClimateMvtTimePicker />
+</div>
+```
+
+### Visual Theming Rules
+
+#### Using ShadCN Components
+
+- All map controls must use ShadCN components (`Card`, `Button`, `Select`, `Popover`, etc.)
+- Do NOT create custom styled divs or use raw HTML elements for control containers
+
+#### Color Variables
+
+Map components must strictly use project theme variables:
+
+```tsx
+// ✅ Correct - uses theme variables
+<Card className="bg-background/95 border border-border">
+  <Button className="bg-background text-foreground">Action</Button>
+</Card>
+
+// ❌ Incorrect - hardcoded colors (even if inspired by Google Maps)
+<div className="bg-white border border-gray-200">
+  <button className="bg-blue-500 text-white">Action</button>
+</div>
+```
+
+#### Transparency & Backdrop Blur
+
+Map controls should use semi-transparency and backdrop blur to maintain visual hierarchy:
+
+```tsx
+// ✅ Correct - allows map visibility
+className = 'bg-background/90 backdrop-blur-sm';
+
+// ❌ Incorrect - fully opaque, blocks map
+className = 'bg-background';
+```
+
+#### Z-Index Layering
+
+Explicit z-index values ensure controls don't interfere with MapLibre GL internals:
+
+- **Top-level floating panels**: `z-10`
+- **Nested popovers/dropdowns**: `z-10` (inherits or explicit)
+- **Never use higher values** (e.g., `z-50`, `z-9999`) unless absolutely necessary
+
+```tsx
+// ✅ Correct - explicit z-10
+<div className="absolute top-4 left-4 z-10">
+  {/* Controls */}
+</div>
+
+// ⚠️ Acceptable but less preferred - relies on stacking context
+<Card className="z-auto">
+  {/* Controls */}
+</Card>
+```
+
+### Hydration Awareness
+
+Map components often use Jotai atoms and hooks that don't work during server-side rendering. Use `useHydrationAware()` to prevent hydration mismatches:
+
+```tsx
+import { useHydrationAware } from '@/lib/hooks/useHydrationAware';
+
+export function MapControl() {
+  const isHydrated = useHydrationAware();
+
+  if (!isHydrated) {
+    return null;
+  }
+
+  // Component renders only after hydration
+  return <div>{/* Content */}</div>;
+}
+```
+
+### Styling Patterns for Embedded Controls
+
+When placing controls inside the `MapControlsPanel`, use the `compact` prop or similar to avoid fixed positioning conflicts:
+
+```tsx
+// ✅ Correct - compact mode for embedded components
+<MapControlsPanel>
+  <SampleClimateMvtSettings compact={true} />
+</MapControlsPanel>;
+
+// Component adaptation
+export function SampleClimateMvtSettings({ compact = false }: Props) {
+  if (buttonOnly) {
+    return <div className={compact ? '' : 'fixed top-20 right-4'}>;{/* Button */}</div>;
+  }
+  // Popover uses relative positioning when compact=true
+}
+```
+
+### Creating New Map Components
+
+When adding new map controls:
+
+1. **Choose the location**: Top-Left Drawer (via `MapControlsPanel`) or specialized floating widget (bottom-left, bottom-right)?
+2. **Use ShadCN**: Import Button, Card, Select, etc., from `@/components/ui/*`
+3. **Use theme variables**: All colors via CSS variables (`bg-background`, `text-foreground`, etc.)
+4. **Add z-index**: `z-10` for all floating elements
+5. **Add hydration check**: Use `useHydrationAware()` if using Jotai or hooks
+6. **Test in both themes**: Ensure colors work in light and dark modes
+7. **Support backdrop blur**: Use `backdrop-blur-sm` for semi-transparent backgrounds
+
+### Example: Adding a Zoom Control
+
+```tsx
+import { Button } from '@/components/ui/button';
+import { Plus, Minus } from 'lucide-react';
+import { useHydrationAware } from '@/lib/hooks/useHydrationAware';
+
+export function ZoomControl() {
+  const isHydrated = useHydrationAware();
+
+  if (!isHydrated) return null;
+
+  return (
+    <div className="absolute bottom-20 right-4 z-10 flex flex-col gap-1">
+      <Button variant="outline" size="icon" className="bg-background/90 backdrop-blur-sm" onClick={() => handleZoom(1)}>
+        <Plus size={16} />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        className="bg-background/90 backdrop-blur-sm"
+        onClick={() => handleZoom(-1)}
+      >
+        <Minus size={16} />
+      </Button>
+    </div>
+  );
+}
+```

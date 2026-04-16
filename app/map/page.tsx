@@ -1,13 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { BasemapSelector } from '@/components/map/BasemapSelector';
-import { SampleClimateMvtToggle } from '@/components/map/toggles/sample-climate-mvt-toggle';
-import { SampleClimateMvtSettings } from '@/components/map/toggles/sample-climate-mvt-settings';
+import { MapControlsPanel } from '@/components/map/MapControlsPanel';
 import { SampleClimateMvtTimePicker } from '@/components/map/toggles/sample-climate-mvt-time-picker';
 import { CurrentLocationLayer } from '@/components/map/layers/CurrentLocationLayer';
 import { SampleClimateMvtLayer } from '@/components/map/layers/sample-climate-mvt';
-import { SampleClimateTimeSlider } from '@/components/map/climate/sample-climate-time-slider';
 import { useUserLocation } from '@/lib/hooks/useUserLocation';
 
 // Skip SSR for BaseMap — MapLibre GL uses browser APIs (WebGL, ResizeObserver,
@@ -27,20 +24,13 @@ export default function MapPage() {
         <SampleClimateMvtLayer />
       </BaseMap>
 
-      {/* Floating controls — top-right corner over the map */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-3">
-        <BasemapSelector />
-        <div className="flex items-center gap-2">
-          <SampleClimateMvtToggle />
-          <SampleClimateMvtSettings />
-        </div>
+      {/* Top-left floating controls panel */}
+      <MapControlsPanel />
+
+      {/* Time picker at bottom-center */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+        <SampleClimateMvtTimePicker />
       </div>
-
-      {/* Climate MVT time picker — bottom-right */}
-      <SampleClimateMvtTimePicker />
-
-      {/* Climate data time slider — center-bottom of map */}
-      <SampleClimateTimeSlider />
     </main>
   );
 }

@@ -16,6 +16,14 @@ import {
   type Stretch
 } from '@/lib/atoms/sample-climate-mvt';
 
+interface SampleClimateMvtSettingsProps {
+  /**
+   * If true, renders just the button without positioning wrapper.
+   * Useful when embedding in a panel or container that handles positioning.
+   */
+  compact?: boolean;
+}
+
 /**
  * SampleClimateMvtSettings
  *
@@ -30,8 +38,10 @@ import {
  * while the user is exploring options.
  *
  * UI: Popover accessible via a Settings (gear icon) button.
+ *
+ * @param compact - If true, renders without fixed positioning for use inside panels.
  */
-export function SampleClimateMvtSettings() {
+export function SampleClimateMvtSettings({ compact = false }: SampleClimateMvtSettingsProps) {
   const isHydrated = useHydrationAware();
   const [globalSettings, setGlobalSettings] = useAtom(sampleClimateMvtSettingsAtom);
   const availableColormaps = useAtomValue(sampleClimateMvtAvailableColormapsAtom);
@@ -59,9 +69,15 @@ export function SampleClimateMvtSettings() {
     }
   };
 
-  if (!isHydrated || !availableColormaps || !formSettings || !isOpen) {
+  if (!isHydrated || !availableColormaps) {
+    return null;
+  }
+
+  const buttonOnly = !formSettings || !isOpen;
+
+  if (buttonOnly) {
     return (
-      <div className="fixed top-20 right-4 z-10">
+      <div className={compact ? '' : 'fixed top-20 right-4 z-10'}>
         {/* Settings button */}
         <Button
           variant="outline"
@@ -96,7 +112,7 @@ export function SampleClimateMvtSettings() {
   };
 
   return (
-    <div className="fixed top-20 right-4 z-10">
+    <div className={compact ? '' : 'fixed top-20 right-4 z-10'}>
       {/* Settings button */}
       <Button
         variant="outline"
@@ -110,7 +126,13 @@ export function SampleClimateMvtSettings() {
 
       {/* Popover panel */}
       {isOpen && formSettings && (
-        <div className="absolute right-0 top-12 mt-1 bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-lg p-4 w-72">
+        <div
+          className={
+            compact
+              ? 'mt-2 p-0 bg-transparent'
+              : 'absolute right-0 top-12 mt-1 bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-lg p-4 w-72'
+          }
+        >
           <div className="space-y-4">
             {/* Colormap selector */}
             <div className="space-y-2">
