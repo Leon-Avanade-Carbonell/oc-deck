@@ -3,7 +3,7 @@
 import { useAtom, useAtomValue } from 'jotai';
 import { useMemo, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
 import { useHydrationAware } from '@/lib/hooks/useHydrationAware';
 
@@ -86,61 +86,68 @@ export function SampleClimateMvtTimePicker() {
     setIsPlaying(!isPlaying);
   };
 
-  const handleSelectTime = (value: string) => {
-    setIsPlaying(false);
-    setCurrentTime(value);
+  const handleSliderChange = (value: number[]) => {
+    if (value[0] !== undefined) {
+      setIsPlaying(false);
+      setCurrentTime(availableTimes[value[0]]);
+    }
   };
 
   return (
-    <div className="fixed bottom-8 right-4 z-20">
-      <div className="bg-background/80 backdrop-blur-sm border border-border rounded-lg shadow-lg px-4 py-3 flex items-center gap-2">
+    <div className="w-[600px] max-w-[90vw] bg-background/95 backdrop-blur-sm border border-border rounded-xl shadow-lg px-4 py-3 flex items-center gap-4">
+      {/* Controls */}
+      <div className="flex items-center gap-1 shrink-0">
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           onClick={handlePrevious}
           disabled={tooFewTimes || controlsDisabled}
           title="Previous time"
-          className="h-8 w-8"
+          className="h-8 w-8 rounded-full"
         >
           <ChevronLeft size={16} />
         </Button>
 
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           onClick={handlePlayPause}
           disabled={tooFewTimes || controlsDisabled}
           title={isPlaying ? 'Pause' : 'Play'}
-          className={`h-8 w-8 ${isPlaying ? 'bg-accent text-accent-foreground' : ''}`}
+          className={`h-8 w-8 rounded-full ${isPlaying ? 'bg-accent text-accent-foreground' : ''}`}
         >
           {isPlaying ? <Pause size={16} /> : <Play size={16} />}
         </Button>
 
         <Button
-          variant="outline"
+          variant="ghost"
           size="icon"
           onClick={handleNext}
           disabled={tooFewTimes || controlsDisabled}
           title="Next time"
-          className="h-8 w-8"
+          className="h-8 w-8 rounded-full"
         >
           <ChevronRight size={16} />
         </Button>
+      </div>
 
-        <Select value={currentTime} onValueChange={handleSelectTime} disabled={tooFewTimes || controlsDisabled}>
-          <SelectTrigger className="h-8 w-36 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {availableTimes.map((t) => (
-              <SelectItem key={t} value={t}>
-                {t}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Slider Track */}
+      <div className="flex-1 px-2">
+        <Slider
+          value={[currentIndex]}
+          min={0}
+          max={availableTimes.length - 1}
+          step={1}
+          onValueChange={handleSliderChange}
+          disabled={tooFewTimes || controlsDisabled}
+          className="cursor-pointer"
+        />
+      </div>
 
-        <div className="text-xs text-muted-foreground">
+      {/* Text Info */}
+      <div className="shrink-0 flex flex-col items-end min-w-[120px]">
+        <div className="text-sm font-medium whitespace-nowrap">{currentTime}</div>
+        <div className="text-xs text-muted-foreground whitespace-nowrap">
           {currentIndex + 1} / {availableTimes.length}
         </div>
       </div>
