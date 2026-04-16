@@ -102,11 +102,13 @@ async function decodeGeoTIFFInWorker(
   console.log('[Worker] ImageData created, data length:', data.length);
 
   if (bandMode === 'rgb') {
-    console.log('[Worker] Reading RGB bands (0, 1, 2) and alpha band (3)...');
+    // Backend band layout (1-indexed): 1-3=RGB, 4=Grayscale, 5=Alpha
+    // In 0-indexed samples:            0-2=RGB, 3=Grayscale,  4=Alpha
+    console.log('[Worker] Reading RGB bands (0, 1, 2) and alpha band (4)...');
     const redBand = await image.readRasters({ samples: [0] });
     const greenBand = await image.readRasters({ samples: [1] });
     const blueBand = await image.readRasters({ samples: [2] });
-    const alphaBand = await image.readRasters({ samples: [3] });
+    const alphaBand = await image.readRasters({ samples: [4] });
     console.log('[Worker] All bands read');
 
     const red = redBand[0] as Uint8Array | Uint16Array;
@@ -158,9 +160,11 @@ async function decodeGeoTIFFInWorker(
     }
     console.log('[Worker] ImageData filled, transparent pixels:', transparentPixels);
   } else {
-    console.log('[Worker] Reading raw band (sample 0) and alpha band (sample 3)...');
-    const rawBand = await image.readRasters({ samples: [0] });
-    const alphaBand = await image.readRasters({ samples: [3] });
+    // Backend band layout (1-indexed): 4=Grayscale (normalized raw data), 5=Alpha
+    // In 0-indexed samples:            3=Grayscale,                       4=Alpha
+    console.log('[Worker] Reading raw band (sample 3) and alpha band (sample 4)...');
+    const rawBand = await image.readRasters({ samples: [3] });
+    const alphaBand = await image.readRasters({ samples: [4] });
     const raw = rawBand[0] as Uint8Array | Uint16Array;
     const alpha = alphaBand[0] as Uint8Array | Uint16Array;
     console.log('[Worker] Raw band read, type:', raw?.constructor?.name, 'alpha type:', alpha?.constructor?.name);
@@ -191,10 +195,13 @@ async function decodeGeoTIFFInWorker(
   const bitmap = await createImageBitmap(imageData);
   console.log('[Worker] ImageBitmap created successfully');
 
-  // Extract georeferencing bounds using image.getBoundingBox().
-  // Returns [west, south, east, north] in the file's native CRS.
-  // We then detect the CRS via GeoKeys and convert to WGS84 degrees if needed,
-  // since BitmapLayer.bounds always expects WGS84 (longitude/latitude degrees).
+  // Extract georeferencing bounds from the GeoTIFF's affine transform.
+  // getBoundingBox() derives [west, south, east, north] from the embedded
+  // ModelTiepoint + ModelPixelScale (or ModelTransformation) — this is the
+  // authoritative source and accounts for the half-pixel correction applied
+  // on the backend. Do NOT use the BOUNDS_WGS84 metadata tag.
+  // Since the backend serves EPSG:3857 (Web Mercator), convert meters → WGS84
+  // degrees for BitmapLayer (which expects longitude/latitude bounds).
   let bounds: [number, number, number, number] = [
     112.9, // west  - WGS84 fallback (Australia)
     -43.65, // south - WGS84 fallback

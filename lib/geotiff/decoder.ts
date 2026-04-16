@@ -37,17 +37,24 @@ export interface GeoTIFFDecodedResult {
  * Decodes a GeoTIFF file and extracts bounds from metadata.
  *
  * Supports two display modes:
- * - 'rgb': Displays bands 0-2 (red, green, blue) as a visual colormap + band 3 (alpha) for transparency
- * - 'raw': Displays band 0 (grayscale raw data) as normalized 0-255 + band 3 (alpha) for transparency
+ * - 'rgb': Displays bands 0-2 (red, green, blue) as a visual colormap + band 4 (alpha) for transparency
+ * - 'raw': Displays band 3 (grayscale raw data) as normalized 0-255 + band 4 (alpha) for transparency
+ *
+ * Backend band layout (1-indexed → 0-indexed):
+ * - Bands 1-3 (samples 0-2): RGB (pre-colormapped, uint8)
+ * - Band 4  (sample 3):      Grayscale (normalized raw data, uint8, 0-255)
+ * - Band 5  (sample 4):      Alpha (255 = valid, 0 = transparent/nodata)
  *
  * Transparency Support:
  * - NaN values in the data are represented as alpha=0 (transparent pixels)
  * - Valid data values have alpha=255 (opaque)
  * - When rendered on DeckGL, transparent pixels show the map background instead of blocking it
  *
- * Extracts georeferencing bounds using image.getBoundingBox() which reads the embedded CRS
- * (ModelTiepoint + ModelPixelScale or ModelTransformation). For WGS84 TIFs the returned
- * bounds are in degrees and can be passed directly to BitmapLayer.
+ * Extracts georeferencing bounds from the GeoTIFF's affine transform
+ * (ModelTiepoint + ModelPixelScale or ModelTransformation) via image.getBoundingBox().
+ * This is the authoritative source for positioning and accounts for the half-pixel
+ * correction applied on the backend. Do NOT use the BOUNDS_WGS84 metadata tag.
+ * For EPSG:3857 TIFs, bounds are converted from meters to WGS84 degrees.
  *
  * @param arrayBuffer - The binary GeoTIFF file data
  * @param bandMode - Which bands to display ('rgb' or 'raw')
@@ -100,11 +107,13 @@ export async function decodeGeoTIFF(
     console.log('[decodeGeoTIFF] ImageData created, data length:', data.length);
 
     if (bandMode === 'rgb') {
-      console.log('[decodeGeoTIFF] Reading RGB bands (0, 1, 2) and alpha band (3)...');
+      // Backend band layout (1-indexed): 1-3=RGB, 4=Grayscale, 5=Alpha
+      // In 0-indexed samples:            0-2=RGB, 3=Grayscale,  4=Alpha
+      console.log('[decodeGeoTIFF] Reading RGB bands (0, 1, 2) and alpha band (4)...');
       const redBand = await image.readRasters({ samples: [0] });
       const greenBand = await image.readRasters({ samples: [1] });
       const blueBand = await image.readRasters({ samples: [2] });
-      const alphaBand = await image.readRasters({ samples: [3] });
+      const alphaBand = await image.readRasters({ samples: [4] });
       console.log('[decodeGeoTIFF] All bands read');
 
       const red = redBand[0] as Uint8Array | Uint16Array;
@@ -143,9 +152,11 @@ export async function decodeGeoTIFF(
       }
       console.log('[decodeGeoTIFF] ImageData filled, transparent pixels:', transparentPixels);
     } else {
-      console.log('[decodeGeoTIFF] Reading raw band (sample 0) and alpha band (sample 3)...');
-      const rawBand = await image.readRasters({ samples: [0] });
-      const alphaBand = await image.readRasters({ samples: [3] });
+      // Backend band layout (1-indexed): 4=Grayscale (normalized raw data), 5=Alpha
+      // In 0-indexed samples:            3=Grayscale,                       4=Alpha
+      console.log('[decodeGeoTIFF] Reading raw band (sample 3) and alpha band (sample 4)...');
+      const rawBand = await image.readRasters({ samples: [3] });
+      const alphaBand = await image.readRasters({ samples: [4] });
       const raw = rawBand[0] as Uint8Array | Uint16Array;
       const alpha = alphaBand[0] as Uint8Array | Uint16Array;
       console.log(
@@ -182,10 +193,13 @@ export async function decodeGeoTIFF(
     const bitmap = await createImageBitmap(imageData);
     console.log('[decodeGeoTIFF] ImageBitmap created successfully');
 
-    // Extract georeferencing bounds using image.getBoundingBox().
-    // Returns [west, south, east, north] in the file's native CRS.
-    // We then detect the CRS via GeoKeys and convert to WGS84 degrees if needed,
-    // since BitmapLayer.bounds always expects WGS84 (longitude/latitude degrees).
+    // Extract georeferencing bounds from the GeoTIFF's affine transform.
+    // getBoundingBox() derives [west, south, east, north] from the embedded
+    // ModelTiepoint + ModelPixelScale (or ModelTransformation) — this is the
+    // authoritative source and accounts for the half-pixel correction applied
+    // on the backend. Do NOT use the BOUNDS_WGS84 metadata tag.
+    // Since the backend serves EPSG:3857 (Web Mercator), convert meters → WGS84
+    // degrees for BitmapLayer (which expects longitude/latitude bounds).
     let bounds: [number, number, number, number] = [
       112.9, // west  - WGS84 fallback (Australia)
       -43.65, // south - WGS84 fallback

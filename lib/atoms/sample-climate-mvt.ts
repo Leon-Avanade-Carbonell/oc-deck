@@ -132,18 +132,43 @@ export const sampleClimateMvtZoomAtom = atom((get) => {
 });
 
 /**
- * sampleClimateMvtImageUrlAtom
- * Dynamically computed image URL based on variable, time, zoom level, colormap, and stretch.
- *
- * Backend serves pre-generated GeoTIFFs in Web Mercator (EPSG:3857) with
- * embedded georeferencing. DeckGL's BitmapLayer automatically reads the
- * projection and bounds from the GeoTIFF metadata.
- *
- * Colormap and stretch are passed as query parameters to control the visualization rendering.
+ * buildClimateMvtUrl
+ * Constructs the GeoTIFF request URL for a given set of parameters.
+ * Exported so the layer component can compute neighbor URLs for pre-fetching
+ * without duplicating the URL-building logic.
  *
  * Examples:
  * - `/api/climate-mvt/monthly_rain/1989-01-16/z3.tif?colormap=RdBu&stretch=sqrt`
  * - `/api/climate-mvt/monthly_rain/1989-01-16/z3.tif?stretch=equalize` (uses default colormap)
+ */
+export function buildClimateMvtUrl(
+  variable: string,
+  time: string,
+  zoom: number,
+  colormap: Colormap,
+  stretch: Stretch
+): string {
+  // Extract only the date part if time includes a timestamp
+  const dateOnly = time.split(' ')[0];
+  const encodedTime = encodeURIComponent(dateOnly);
+
+  const baseUrl = `/api/climate-mvt/${variable}/${encodedTime}/z${zoom}.tif`;
+  const params = new URLSearchParams();
+  params.set('colormap', colormap);
+  params.set('stretch', stretch);
+
+  return `${baseUrl}?${params.toString()}`;
+}
+
+/**
+ * sampleClimateMvtImageUrlAtom
+ * Dynamically computed image URL based on variable, time, zoom level, colormap, and stretch.
+ *
+ * Backend serves pre-generated GeoTIFFs in Web Mercator (EPSG:3857) with
+ * embedded georeferencing (affine transform). DeckGL's BitmapLayer does NOT
+ * natively read GeoTIFF georeferencing — the decoder extracts bounds from the
+ * affine transform, converts EPSG:3857 meters → WGS84 degrees, and passes
+ * them explicitly to BitmapLayer via the `bounds` prop.
  */
 export const sampleClimateMvtImageUrlAtom = atom((get) => {
   const variable = get(sampleClimateMvtVariableAtom);
@@ -152,17 +177,7 @@ export const sampleClimateMvtImageUrlAtom = atom((get) => {
   const colormap = get(sampleClimateMvtColormapAtom);
   const stretch = get(sampleClimateMvtStretchAtom);
 
-  // Extract only the date part if time includes a timestamp
-  const dateOnly = time.split(' ')[0];
-  const encodedTime = encodeURIComponent(dateOnly);
-
-  // Construct URL through Next.js API proxy with colormap and stretch query parameters
-  const baseUrl = `/api/climate-mvt/${variable}/${encodedTime}/z${zoom}.tif`;
-  const params = new URLSearchParams();
-  params.set('colormap', colormap);
-  params.set('stretch', stretch);
-
-  return `${baseUrl}?${params.toString()}`;
+  return buildClimateMvtUrl(variable, time, zoom, colormap, stretch);
 });
 
 /**

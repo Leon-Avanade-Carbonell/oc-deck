@@ -42,6 +42,12 @@ export function SampleClimateMvtTimePicker() {
   // When isDecoding flips to false (decode complete) and we're still playing,
   // wait 1200ms then advance to the next time step, which will set isDecoding
   // back to true — the timer clears and we wait for the next decode cycle.
+  //
+  // currentTime is included in deps so that a cache-hit decode (which never
+  // flips isDecoding true→false) still re-arms the timer: time changes →
+  // effect re-runs → new 1200ms timer → next advance. For non-cached decodes,
+  // the timer created here is cancelled moments later when isDecoding goes true,
+  // then re-created when isDecoding returns to false — same net behaviour as before.
   useEffect(() => {
     if (!isPlaying || isDecoding || availableTimes.length === 0) return;
 
@@ -53,7 +59,7 @@ export function SampleClimateMvtTimePicker() {
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, isDecoding, availableTimes, setCurrentTime]);
+  }, [isPlaying, isDecoding, availableTimes, setCurrentTime, currentTime]);
 
   if (!isHydrated || availableTimes.length === 0) {
     return null;
