@@ -3,9 +3,8 @@
 import dynamic from 'next/dynamic';
 import { BasemapSelector } from '@/components/map/BasemapSelector';
 import { SampleClimateMvtToggle } from '@/components/map/toggles/sample-climate-mvt-toggle';
+import { SampleClimateMvtSettings } from '@/components/map/toggles/sample-climate-mvt-settings';
 import { SampleClimateMvtTimePicker } from '@/components/map/toggles/sample-climate-mvt-time-picker';
-import { SampleClimateMvtColormapSelector } from '@/components/map/toggles/sample-climate-mvt-colormap-selector';
-import { SampleClimateMvtStretchSelector } from '@/components/map/toggles/sample-climate-mvt-stretch-selector';
 import { CurrentLocationLayer } from '@/components/map/layers/CurrentLocationLayer';
 import { SampleClimateMvtLayer } from '@/components/map/layers/sample-climate-mvt';
 import { SampleClimateTimeSlider } from '@/components/map/climate/sample-climate-time-slider';
@@ -31,14 +30,11 @@ export default function MapPage() {
       {/* Floating controls — top-right corner over the map */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-3">
         <BasemapSelector />
-        <SampleClimateMvtToggle />
+        <div className="flex items-center gap-2">
+          <SampleClimateMvtToggle />
+          <SampleClimateMvtSettings />
+        </div>
       </div>
-
-      {/* Climate MVT colormap selector — bottom-right, above time picker */}
-      <SampleClimateMvtColormapSelector />
-
-      {/* Climate MVT stretch selector — bottom-right, above time picker */}
-      <SampleClimateMvtStretchSelector />
 
       {/* Climate MVT time picker — bottom-right */}
       <SampleClimateMvtTimePicker />

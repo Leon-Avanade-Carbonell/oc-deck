@@ -18,8 +18,7 @@ import {
   sampleClimateMvtAvailableTimesAtom,
   sampleClimateMvtTimeAtom,
   sampleClimateMvtVariableAtom,
-  sampleClimateMvtColormapAtom,
-  sampleClimateMvtStretchAtom
+  sampleClimateMvtSettingsAtom
 } from '@/lib/atoms/sample-climate-mvt';
 
 /** Decoded GeoTIFF entry stored in the bitmap cache. */
@@ -84,8 +83,7 @@ export function SampleClimateMvtLayer() {
   const [availableTimes] = useAtom(sampleClimateMvtAvailableTimesAtom);
   const [currentTime] = useAtom(sampleClimateMvtTimeAtom);
   const [variable] = useAtom(sampleClimateMvtVariableAtom);
-  const [colormap] = useAtom(sampleClimateMvtColormapAtom);
-  const [stretch] = useAtom(sampleClimateMvtStretchAtom);
+  const [settings] = useAtom(sampleClimateMvtSettingsAtom);
 
   /**
    * In-memory bitmap cache: URL → decoded entry.
@@ -274,7 +272,7 @@ export function SampleClimateMvtLayer() {
         if (neighborIndex < 0 || neighborIndex >= availableTimes.length) continue;
 
         const neighborTime = availableTimes[neighborIndex];
-        const neighborUrl = buildClimateMvtUrl(variable, neighborTime, zoom, colormap, stretch);
+        const neighborUrl = buildClimateMvtUrl(variable, neighborTime, zoom, settings.colormap, settings.stretch);
 
         if (bitmapCacheRef.current.has(neighborUrl)) {
           console.log('[SampleClimateMvtLayer] Pre-fetch skip (cached):', neighborUrl);
@@ -317,8 +315,7 @@ export function SampleClimateMvtLayer() {
     currentTime,
     variable,
     zoom,
-    colormap,
-    stretch
+    settings
   ]);
 
   // Create BitmapLayer with decoded image and extracted bounds.
@@ -333,7 +330,7 @@ export function SampleClimateMvtLayer() {
       image: decodedBitmap,
       bounds: boundsFromGeoTIFF ?? ([0, 0, 1, 1] as [number, number, number, number]),
       pickable: true,
-      opacity: 0.4,
+      opacity: settings.opacity,
       tintColor: [255, 255, 255],
       desaturate: 0,
       onClick: (info) => {
@@ -351,10 +348,11 @@ export function SampleClimateMvtLayer() {
       },
       updateTriggers: {
         image: [decodedBitmap],
-        bounds: [boundsFromGeoTIFF]
+        bounds: [boundsFromGeoTIFF],
+        opacity: [settings.opacity]
       }
     });
-  }, [visible, decodedBitmap, boundsFromGeoTIFF, setHoveredValue]);
+  }, [visible, decodedBitmap, boundsFromGeoTIFF, settings.opacity, setHoveredValue]);
 
   // Register layer with smart layer system
   const { setVisible: setLayerVisible } = useSmartLayer({

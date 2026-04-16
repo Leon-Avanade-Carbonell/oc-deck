@@ -21,6 +21,12 @@ export type Colormap =
 
 export type Stretch = 'linear' | 'sqrt' | 'log' | 'cbrt' | 'equalize' | 'percentile_2_98' | 'minmax';
 
+export interface ClimateMvtSettings {
+  colormap: Colormap;
+  stretch: Stretch;
+  opacity: number;
+}
+
 export interface ColormapMetadata {
   default: string;
   colormaps: Record<string, string>;
@@ -51,20 +57,35 @@ export const sampleClimateMvtFetchColormapsAtom = atom(null, async (_get, set) =
 });
 
 /**
- * sampleClimateMvtStretchAtom
- * Selects the stretch function for data value transformation before colormap application.
- * Default: 'equalize' (histogram equalization for balanced contrast)
+ * sampleClimateMvtSettingsAtom
+ * Consolidated settings for the climate MVT layer visualization.
  *
- * Available stretches:
- * - linear: No transformation
- * - sqrt: Square root transformation
- * - log: Logarithmic transformation
- * - cbrt: Cube root transformation
- * - equalize: Histogram equalization
- * - percentile_2_98: 2%-98% percentile stretch
- * - minmax: Min-max normalization
+ * Fields:
+ * - colormap: The colormap for rendering the climate data visualization.
+ *   Default: 'Blues' (sequential white → dark blue, intuitive for rainfall)
+ *   Available colormaps:
+ *   - Diverging (best for anomalies): vanimo, berlin, managua, RdBu, coolwarm, BrBG, PuOr, Spectral
+ *   - Sequential (best for measurements): viridis, plasma, inferno, magma, Blues, YlGnBu, YlOrRd
+ *   - Extended rainbow: turbo (for depth/disparity data)
+ *
+ * - stretch: The stretch function for data value transformation before colormap application.
+ *   Default: 'equalize' (histogram equalization for balanced contrast)
+ *   Available stretches:
+ *   - linear: No transformation
+ *   - sqrt: Square root transformation
+ *   - log: Logarithmic transformation
+ *   - cbrt: Cube root transformation
+ *   - equalize: Histogram equalization
+ *   - percentile_2_98: 2%-98% percentile stretch
+ *   - minmax: Min-max normalization
+ *
+ * - opacity: Layer opacity (0-1). Default: 0.8
  */
-export const sampleClimateMvtStretchAtom = atom<Stretch>('equalize');
+export const sampleClimateMvtSettingsAtom = atom<ClimateMvtSettings>({
+  colormap: 'Blues',
+  stretch: 'equalize',
+  opacity: 0.8
+});
 
 /**
  * sampleClimateMvtVariableAtom
@@ -96,18 +117,6 @@ export const sampleClimateMvtAvailableTimesAtom = atom<string[]>([
  * Selected time (date string, matching availableTimes format)
  */
 export const sampleClimateMvtTimeAtom = atom<string>('1989-01-16');
-
-/**
- * sampleClimateMvtColormapAtom
- * Selects the colormap for rendering the climate data visualization.
- * Default: 'Blues' (sequential white → dark blue, intuitive for rainfall)
- *
- * Available colormaps:
- * - Diverging (best for anomalies): vanimo, berlin, managua, RdBu, coolwarm, BrBG, PuOr, Spectral
- * - Sequential (best for measurements): viridis, plasma, inferno, magma, Blues, YlGnBu, YlOrRd
- * - Extended rainbow: turbo (for depth/disparity data)
- */
-export const sampleClimateMvtColormapAtom = atom<Colormap>('Blues');
 
 /**
  * sampleClimateMvtZoomAtom (derived)
@@ -174,10 +183,9 @@ export const sampleClimateMvtImageUrlAtom = atom((get) => {
   const variable = get(sampleClimateMvtVariableAtom);
   const time = get(sampleClimateMvtTimeAtom);
   const zoom = get(sampleClimateMvtZoomAtom);
-  const colormap = get(sampleClimateMvtColormapAtom);
-  const stretch = get(sampleClimateMvtStretchAtom);
+  const settings = get(sampleClimateMvtSettingsAtom);
 
-  return buildClimateMvtUrl(variable, time, zoom, colormap, stretch);
+  return buildClimateMvtUrl(variable, time, zoom, settings.colormap, settings.stretch);
 });
 
 /**
