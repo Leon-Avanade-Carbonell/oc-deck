@@ -115,7 +115,7 @@ export function BaseMap({ children, initialViewport, controls = DEFAULT_CONTROLS
         pitchWithRotate={controls?.pitch ?? false}
         touchZoomRotate={touchZoomEnabled}
       >
-        <DeckGLOverlay layers={allLayers} />
+        <DeckGLOverlay layers={allLayers} pickingRadius={16} />
         <MapContent>{children}</MapContent>
       </Map>
     </div>
