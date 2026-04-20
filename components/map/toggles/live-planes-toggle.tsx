@@ -21,9 +21,7 @@ export function LivePlanesToggle() {
       size="icon"
       onClick={() => setVisible(!visible)}
       className={`transition-colors backdrop-blur-sm ${
-        visible
-          ? 'bg-orange-500 border-orange-500 text-white'
-          : 'bg-background/90'
+        visible ? 'bg-orange-500 border-orange-500 text-white' : 'bg-background/90'
       }`}
       aria-label="Toggle live planes layer"
       title="Toggle live planes layer"

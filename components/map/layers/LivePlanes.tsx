@@ -13,7 +13,7 @@ import {
   planesPollIntervalAtom,
   planesRefreshTriggerAtom,
   planesFetchStatusAtom,
-  type Plane,
+  type Plane
 } from '@/lib/atoms/live-planes';
 
 const LAYER_ID = 'live-planes';
@@ -21,7 +21,7 @@ const LAYER_ID = 'live-planes';
 /** Icon atlas config — single plane sprite pointing north, white for tinting. */
 const ICON_ATLAS = '/plane-icon.svg';
 const ICON_MAPPING = {
-  plane: { x: 0, y: 0, width: 64, height: 64, anchorX: 32, anchorY: 32 },
+  plane: { x: 0, y: 0, width: 64, height: 64, anchorX: 32, anchorY: 32 }
 } as const;
 
 /**
@@ -32,9 +32,7 @@ const ICON_MAPPING = {
  * @see https://opensky-network.org/apidoc/rest.html#response
  */
 async function fetchPlanes(): Promise<
-  | { status: 'ok'; planes: Plane[] }
-  | { status: 'rate-limited' }
-  | { status: 'error'; message: string }
+  { status: 'ok'; planes: Plane[] } | { status: 'rate-limited' } | { status: 'error'; message: string }
 > {
   let res: Response;
   try {
@@ -54,7 +52,7 @@ async function fetchPlanes(): Promise<
     .filter(
       (s) =>
         typeof s[5] === 'number' && // longitude
-        typeof s[6] === 'number'    // latitude
+        typeof s[6] === 'number' // latitude
     )
     .map((s) => ({
       icao24: String(s[0]),
@@ -66,7 +64,7 @@ async function fetchPlanes(): Promise<
       onGround: s[8] as boolean,
       velocity: typeof s[9] === 'number' ? s[9] : null,
       trueTrack: typeof s[10] === 'number' ? s[10] : null,
-      verticalRate: typeof s[11] === 'number' ? s[11] : null,
+      verticalRate: typeof s[11] === 'number' ? s[11] : null
     }));
 
   return { status: 'ok', planes };
@@ -153,16 +151,14 @@ export function LivePlanesLayer() {
         },
         onClick: (info) => {
           if (info.object) {
-            setSelected((prev) =>
-              prev?.icao24 === info.object.icao24 ? null : info.object
-            );
+            setSelected((prev) => (prev?.icao24 === info.object.icao24 ? null : info.object));
           }
         },
         updateTriggers: {
           getColor: [data],
           getSize: [selected],
-          getAngle: [data],
-        },
+          getAngle: [data]
+        }
       }),
     [data, visible, selected, setSelected, setHovered]
   );

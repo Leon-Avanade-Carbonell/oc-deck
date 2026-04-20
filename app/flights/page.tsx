@@ -56,13 +56,9 @@ export default function FlightsPage() {
           </p>
         </div>
 
-        {loading && (
-          <p className="text-sm text-muted-foreground animate-pulse">Loading sessions…</p>
-        )}
+        {loading && <p className="text-sm text-muted-foreground animate-pulse">Loading sessions…</p>}
 
-        {error && (
-          <p className="text-sm text-destructive">Failed to load sessions: {error}</p>
-        )}
+        {error && <p className="text-sm text-destructive">Failed to load sessions: {error}</p>}
 
         {!loading && !error && requests.length === 0 && (
           <p className="text-sm text-muted-foreground">No sessions found.</p>
@@ -95,7 +91,10 @@ export default function FlightsPage() {
                 </span>
                 <button
                   className="flex items-center gap-1.5 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => { e.stopPropagation(); openMap(req.id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openMap(req.id);
+                  }}
                   aria-label="Open map"
                 >
                   <MapIcon className="h-3.5 w-3.5" />

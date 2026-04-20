@@ -34,10 +34,7 @@ export default function PlanesPage() {
 
       {/* Hover tooltip — follows the cursor */}
       {hovered && (
-        <div
-          className="absolute z-20 pointer-events-none"
-          style={{ left: hovered.x + 12, top: hovered.y + 12 }}
-        >
+        <div className="absolute z-20 pointer-events-none" style={{ left: hovered.x + 12, top: hovered.y + 12 }}>
           <div className="border-2 border-dotted border-white bg-black/70 text-white text-xs px-2 py-1.5 leading-5 backdrop-blur-sm">
             <div>
               <span className="text-white/50 uppercase tracking-wider text-[10px]">Callsign</span>

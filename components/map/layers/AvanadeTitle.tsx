@@ -24,29 +24,20 @@ export function AvanadeTitle() {
         style={{
           background: 'linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(20,20,20,0.3) 100%)',
           backdropFilter: 'blur(6px)',
-          borderLeft: '4px solid #FF0000',
+          borderLeft: '4px solid #FF0000'
         }}
       >
         {/* Avanade wordmark accent line */}
         <div className="flex items-center gap-2 self-start">
-          <span
-            className="text-[40px] font-bold tracking-[0.25em] uppercase"
-            style={{ color: '#FF0000' }}
-          >
+          <span className="text-[40px] font-bold tracking-[0.25em] uppercase" style={{ color: '#FF0000' }}>
             Avanade
           </span>
-          <span
-            className="block h-px flex-1 w-8"
-            style={{ background: '#FF0000' }}
-          />
+          <span className="block h-px flex-1 w-8" style={{ background: '#FF0000' }} />
         </div>
 
         {/* Main event title */}
-        <h1
-          className="text-9xl font-bold tracking-tight text-white text-center leading-tight"
-        >
-          Data &amp; AI Tour{' '}
-          <span style={{ color: '#FF0000' }}>2026</span>
+        <h1 className="text-9xl font-bold tracking-tight text-white text-center leading-tight">
+          Data &amp; AI Tour <span style={{ color: '#FF0000' }}>2026</span>
         </h1>
       </div>
     </div>

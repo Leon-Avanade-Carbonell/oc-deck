@@ -70,9 +70,7 @@ export function PlanesPollControl() {
         >
           <RefreshCw size={12} />
         </button>
-        <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-          Refresh every
-        </span>
+        <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Refresh every</span>
         <input
           type="number"
           min={10}

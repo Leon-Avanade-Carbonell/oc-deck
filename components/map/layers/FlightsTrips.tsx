@@ -14,8 +14,9 @@ import {
   flightsTrailLengthAtom,
   flightsFetchStatusAtom,
   flightsSelectedAtom,
-  flightsAltMapAtom,  type FlightTrip,
-  type TripWaypoint,
+  flightsAltMapAtom,
+  type FlightTrip,
+  type TripWaypoint
 } from '@/lib/atoms/flights';
 
 const TRIPS_LAYER_ID = 'flights-trips';
@@ -23,7 +24,7 @@ const ICONS_LAYER_ID = 'flights-icons';
 
 const ICON_ATLAS = '/plane-icon.svg';
 const ICON_MAPPING = {
-  plane: { x: 0, y: 0, width: 64, height: 64, anchorX: 32, anchorY: 32 },
+  plane: { x: 0, y: 0, width: 64, height: 64, anchorX: 32, anchorY: 32 }
 } as const;
 
 type RGBAColor = [number, number, number, number];
@@ -42,10 +43,10 @@ type RGBAColor = [number, number, number, number];
 function altitudeToColor(altMetres: number, alpha = 220): RGBAColor {
   // [altitude_metres, r, g, b]
   const STOPS: [number, number, number, number][] = [
-    [0,      0,   200,  80],
-    [1_500,  255, 220,   0],
-    [4_000,  255, 100,   0],
-    [10_000, 30,  144, 255],
+    [0, 0, 200, 80],
+    [1_500, 255, 220, 0],
+    [4_000, 255, 100, 0],
+    [10_000, 30, 144, 255]
   ];
 
   const alt = Math.max(altMetres, 0);
@@ -62,12 +63,7 @@ function altitudeToColor(altMetres: number, alpha = 220): RGBAColor {
     const [a1, r1, g1, b1] = STOPS[i + 1];
     if (alt <= a1) {
       const t = (alt - a0) / (a1 - a0);
-      return [
-        Math.round(r0 + (r1 - r0) * t),
-        Math.round(g0 + (g1 - g0) * t),
-        Math.round(b0 + (b1 - b0) * t),
-        alpha,
-      ];
+      return [Math.round(r0 + (r1 - r0) * t), Math.round(g0 + (g1 - g0) * t), Math.round(b0 + (b1 - b0) * t), alpha];
     }
   }
 
@@ -117,7 +113,7 @@ function computePositions(trips: FlightTrip[], currentTime: number): PlanePositi
     if (wps.length < 2) continue;
 
     const first = wps[0];
-    const last  = wps[wps.length - 1];
+    const last = wps[wps.length - 1];
     if (currentTime < first.timestamp || currentTime > last.timestamp) continue;
 
     // Binary search for bracketing waypoints
@@ -132,20 +128,16 @@ function computePositions(trips: FlightTrip[], currentTime: number): PlanePositi
     const a: TripWaypoint = wps[lo];
     const b: TripWaypoint = wps[hi];
     const span = b.timestamp - a.timestamp;
-    const t    = span > 0 ? (currentTime - a.timestamp) / span : 0;
+    const t = span > 0 ? (currentTime - a.timestamp) / span : 0;
 
     const alt = lerpN(a.coordinates[2], b.coordinates[2], t);
 
     result.push({
       icao24: trip.icao24,
       callsign: trip.callsign,
-      position: [
-        lerpN(a.coordinates[0], b.coordinates[0], t),
-        lerpN(a.coordinates[1], b.coordinates[1], t),
-        alt,
-      ],
+      position: [lerpN(a.coordinates[0], b.coordinates[0], t), lerpN(a.coordinates[1], b.coordinates[1], t), alt],
       heading: bearing(a.coordinates, b.coordinates),
-      altitude: alt,
+      altitude: alt
     });
   }
 
@@ -163,15 +155,15 @@ function computePositions(trips: FlightTrip[], currentTime: number): PlanePositi
  * the `positions` array (which changes every frame during playback).
  */
 export function FlightsTripsLayer({ requestId }: FlightsTripsLayerProps) {
-  const [trips, setTrips]           = useAtom(flightsTripsAtom);
+  const [trips, setTrips] = useAtom(flightsTripsAtom);
   const [currentTime, setCurrentTime] = useAtom(flightsCurrentTimeAtom);
-  const [maxTime, setMaxTime]       = useAtom(flightsMaxTimeAtom);
-  const [playing]                   = useAtom(flightsPlayingAtom);
-  const [speed]                     = useAtom(flightsSpeedAtom);
-  const [trailLength]               = useAtom(flightsTrailLengthAtom);
-  const [, setFetchStatus]          = useAtom(flightsFetchStatusAtom);
-  const [, setSelected]             = useAtom(flightsSelectedAtom);
-  const [, setAltMap]               = useAtom(flightsAltMapAtom);
+  const [maxTime, setMaxTime] = useAtom(flightsMaxTimeAtom);
+  const [playing] = useAtom(flightsPlayingAtom);
+  const [speed] = useAtom(flightsSpeedAtom);
+  const [trailLength] = useAtom(flightsTrailLengthAtom);
+  const [, setFetchStatus] = useAtom(flightsFetchStatusAtom);
+  const [, setSelected] = useAtom(flightsSelectedAtom);
+  const [, setAltMap] = useAtom(flightsAltMapAtom);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -184,11 +176,17 @@ export function FlightsTripsLayer({ requestId }: FlightsTripsLayerProps) {
       try {
         res = await fetch(`/api/flights/trips/${requestId}`);
       } catch (err) {
-        if (!cancelled) { console.error('[FlightsTripsLayer] Fetch error:', err); setFetchStatus('error'); }
+        if (!cancelled) {
+          console.error('[FlightsTripsLayer] Fetch error:', err);
+          setFetchStatus('error');
+        }
         return;
       }
       if (!res.ok) {
-        if (!cancelled) { console.error('[FlightsTripsLayer] HTTP', res.status); setFetchStatus('error'); }
+        if (!cancelled) {
+          console.error('[FlightsTripsLayer] HTTP', res.status);
+          setFetchStatus('error');
+        }
         return;
       }
       const data = (await res.json()) as FlightTrip[];
@@ -198,19 +196,19 @@ export function FlightsTripsLayer({ requestId }: FlightsTripsLayerProps) {
       setFetchStatus('ok');
 
       let max = 0;
-      for (const trip of data)
-        for (const wp of trip.waypoints)
-          if (wp.timestamp > max) max = wp.timestamp;
+      for (const trip of data) for (const wp of trip.waypoints) if (wp.timestamp > max) max = wp.timestamp;
       setMaxTime(max);
       setCurrentTime(0);
     };
 
     void load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [requestId, setTrips, setMaxTime, setCurrentTime, setFetchStatus]);
 
   // ── Animation loop ─────────────────────────────────────────────────────────
-  const rafRef      = useRef<number>(undefined);
+  const rafRef = useRef<number>(undefined);
   const lastTimeRef = useRef<number>(0);
 
   useEffect(() => {
@@ -231,14 +229,13 @@ export function FlightsTripsLayer({ requestId }: FlightsTripsLayerProps) {
 
     lastTimeRef.current = 0;
     rafRef.current = requestAnimationFrame(animate);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, [playing, speed, maxTime, setCurrentTime]);
 
   // ── Interpolated positions (recomputed each frame during playback) ─────────
-  const positions = useMemo(
-    () => computePositions(trips, currentTime),
-    [trips, currentTime]
-  );
+  const positions = useMemo(() => computePositions(trips, currentTime), [trips, currentTime]);
 
   // Publish live altitudes to atom so other components (e.g. tooltip) can read them
   useEffect(() => {
@@ -269,8 +266,8 @@ export function FlightsTripsLayer({ requestId }: FlightsTripsLayerProps) {
         trailLength,
         currentTime,
         updateTriggers: {
-          getColor: [altMap],
-        },
+          getColor: [altMap]
+        }
       }),
     // altMap + currentTime + trailLength drive updates
     [trips, trailLength, currentTime, altMap]
@@ -292,21 +289,19 @@ export function FlightsTripsLayer({ requestId }: FlightsTripsLayerProps) {
         pickable: true,
         onClick: (info) => {
           setSelected(
-            info.object
-              ? { icao24: info.object.icao24, callsign: info.object.callsign, x: info.x, y: info.y }
-              : null
+            info.object ? { icao24: info.object.icao24, callsign: info.object.callsign, x: info.x, y: info.y } : null
           );
         },
         updateTriggers: {
           getPosition: [positions],
-          getAngle:    [positions],
-        },
+          getAngle: [positions]
+        }
       }),
     [positions]
   );
 
   useSmartLayer({ id: TRIPS_LAYER_ID, layer: tripsLayer, label: 'Flight Trails', order: 0 });
-  useSmartLayer({ id: ICONS_LAYER_ID, layer: iconsLayer, label: 'Flight Icons',  order: 1 });
+  useSmartLayer({ id: ICONS_LAYER_ID, layer: iconsLayer, label: 'Flight Icons', order: 1 });
 
   return null;
 }

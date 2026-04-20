@@ -22,11 +22,18 @@ function FlightsMapContent() {
   useEffect(() => {
     if (!selected) return;
     let armed = false;
-    const timer = setTimeout(() => { armed = true; }, 150);
-    const handler = () => { if (armed) setSelected(null); };
+    const timer = setTimeout(() => {
+      armed = true;
+    }, 150);
+    const handler = () => {
+      if (armed) setSelected(null);
+    };
     document.addEventListener('click', handler);
-    return () => { clearTimeout(timer); document.removeEventListener('click', handler); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', handler);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.icao24]);
 
   if (!requestId) {
@@ -66,13 +73,9 @@ function FlightsMapContent() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Callsign</p>
-                <p className="text-sm font-semibold font-mono leading-none">
-                  {selected.callsign ?? '—'}
-                </p>
+                <p className="text-sm font-semibold font-mono leading-none">{selected.callsign ?? '—'}</p>
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-2 mb-0.5">ICAO24</p>
-                <p className="text-xs font-mono text-muted-foreground leading-none">
-                  {selected.icao24}
-                </p>
+                <p className="text-xs font-mono text-muted-foreground leading-none">{selected.icao24}</p>
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-2 mb-0.5">Altitude</p>
                 <p className="text-xs font-mono text-muted-foreground leading-none">
                   {liveAlt !== null ? `${Math.round(liveAlt).toLocaleString()} m` : '—'}

@@ -10,7 +10,7 @@ import {
   flightsPlayingAtom,
   flightsSpeedAtom,
   flightsTrailLengthAtom,
-  flightsFetchStatusAtom,
+  flightsFetchStatusAtom
 } from '@/lib/atoms/flights';
 
 const SPEED_OPTIONS = [1, 2, 5, 10, 20, 40, 50, 75, 100] as const;
@@ -41,12 +41,8 @@ export function FlightsAnimationControls() {
   return (
     <div className="bg-card border border-border text-card-foreground p-3 w-72 shadow-lg">
       {/* Status banner */}
-      {isLoading && (
-        <p className="text-xs text-muted-foreground mb-2 animate-pulse">Loading trips…</p>
-      )}
-      {fetchStatus === 'error' && (
-        <p className="text-xs text-destructive mb-2">Failed to load trips.</p>
-      )}
+      {isLoading && <p className="text-xs text-muted-foreground mb-2 animate-pulse">Loading trips…</p>}
+      {fetchStatus === 'error' && <p className="text-xs text-destructive mb-2">Failed to load trips.</p>}
 
       {/* Timeline */}
       <div className="flex items-center gap-2 mb-3">
@@ -66,7 +62,10 @@ export function FlightsAnimationControls() {
           size="icon"
           className="h-8 w-8 shrink-0"
           disabled={!hasData}
-          onClick={() => { setPlaying(false); setCurrentTime(0); }}
+          onClick={() => {
+            setPlaying(false);
+            setCurrentTime(0);
+          }}
           aria-label="Reset"
         >
           <RotateCcw className="h-4 w-4" />
@@ -84,7 +83,10 @@ export function FlightsAnimationControls() {
         step={1}
         value={[currentTime]}
         disabled={!hasData}
-        onValueChange={([v]) => { setPlaying(false); setCurrentTime(v); }}
+        onValueChange={([v]) => {
+          setPlaying(false);
+          setCurrentTime(v);
+        }}
         className="mb-3"
         aria-label="Animation time"
       />

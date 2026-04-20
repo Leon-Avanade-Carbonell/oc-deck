@@ -39,18 +39,13 @@ export function PlaneDetailsPanel() {
 
   if (!selected) return null;
 
-  const heading =
-    selected.trueTrack != null
-      ? `${selected.trueTrack.toFixed(0)}°`
-      : '—';
+  const heading = selected.trueTrack != null ? `${selected.trueTrack.toFixed(0)}°` : '—';
 
   return (
     <div className="absolute bottom-4 right-4 z-20 w-72">
       <Card className="bg-background/95 backdrop-blur-md shadow-2xl">
         <CardHeader className="border-b border-border/40">
-          <CardTitle className="font-mono text-base">
-            {selected.callsign ?? selected.icao24}
-          </CardTitle>
+          <CardTitle className="font-mono text-base">{selected.callsign ?? selected.icao24}</CardTitle>
           <CardAction>
             <Button
               variant="outline"
@@ -65,16 +60,16 @@ export function PlaneDetailsPanel() {
         </CardHeader>
 
         <CardContent className="pt-3 pb-1 space-y-0">
-          <Row label="ICAO24"         value={selected.icao24}                     mono />
-          <Row label="Callsign"       value={selected.callsign ?? '—'}            mono />
-          <Row label="Country"        value={selected.originCountry} />
-          <Row label="Longitude"      value={fmt(selected.longitude, 4, '°')}     mono />
-          <Row label="Latitude"       value={fmt(selected.latitude, 4, '°')}      mono />
-          <Row label="Altitude"       value={fmt(selected.baroAltitude, 0, 'm')}  mono />
-          <Row label="Speed"          value={fmt(selected.velocity, 1, 'm/s')}    mono />
-          <Row label="Heading"        value={heading}                             mono />
-          <Row label="Vertical rate"  value={fmt(selected.verticalRate, 1, 'm/s')}mono />
-          <Row label="On ground"      value={selected.onGround ? 'Yes' : 'No'} />
+          <Row label="ICAO24" value={selected.icao24} mono />
+          <Row label="Callsign" value={selected.callsign ?? '—'} mono />
+          <Row label="Country" value={selected.originCountry} />
+          <Row label="Longitude" value={fmt(selected.longitude, 4, '°')} mono />
+          <Row label="Latitude" value={fmt(selected.latitude, 4, '°')} mono />
+          <Row label="Altitude" value={fmt(selected.baroAltitude, 0, 'm')} mono />
+          <Row label="Speed" value={fmt(selected.velocity, 1, 'm/s')} mono />
+          <Row label="Heading" value={heading} mono />
+          <Row label="Vertical rate" value={fmt(selected.verticalRate, 1, 'm/s')} mono />
+          <Row label="On ground" value={selected.onGround ? 'Yes' : 'No'} />
         </CardContent>
       </Card>
     </div>

@@ -21,10 +21,10 @@ export async function GET() {
     const response = await fetch(upstreamUrl, {
       method: 'GET',
       headers: {
-        Accept: 'application/json',
+        Accept: 'application/json'
       },
       // Next.js: don't cache — data changes every few seconds
-      cache: 'no-store',
+      cache: 'no-store'
     });
 
     if (!response.ok) {
@@ -39,8 +39,8 @@ export async function GET() {
       headers: {
         'Content-Type': 'application/json',
         // No caching — the layer controls its own poll interval
-        'Cache-Control': 'no-store',
-      },
+        'Cache-Control': 'no-store'
+      }
     });
   } catch (error) {
     console.error('[OpenSky Proxy] Error:', error);

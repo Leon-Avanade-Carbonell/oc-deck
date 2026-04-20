@@ -18,11 +18,7 @@ export function AvanadeTitleToggle() {
       variant="outline"
       size="icon"
       onClick={() => setVisible(!visible)}
-      className={`transition-colors backdrop-blur-sm ${
-        visible
-          ? 'border-[#FF0000] text-white'
-          : 'bg-background/90'
-      }`}
+      className={`transition-colors backdrop-blur-sm ${visible ? 'border-[#FF0000] text-white' : 'bg-background/90'}`}
       style={visible ? { background: '#FF0000' } : undefined}
       aria-label="Toggle Avanade title overlay"
       title="Toggle Avanade title overlay"

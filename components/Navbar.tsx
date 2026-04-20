@@ -9,7 +9,7 @@ import { Moon, Sun } from 'lucide-react';
 
 const NAV_LINKS = [
   { href: '/flights', label: 'Flights' },
-  { href: '/planes', label: 'Planes' },
+  { href: '/planes', label: 'Planes' }
 ] as const;
 
 function NavbarContent() {
@@ -30,9 +30,7 @@ function NavbarContent() {
                   key={href}
                   href={href}
                   className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                    active
-                      ? 'text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
+                    active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {label}
