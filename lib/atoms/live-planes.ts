@@ -37,3 +37,37 @@ export const livePlanesVisibleAtom = atom(true);
  * Null when nothing is selected.
  */
 export const livePlanesSelectedAtom = atom<Plane | null>(null);
+
+/**
+ * livePlanesHoveredAtom
+ * Stores the currently hovered aircraft and its screen-space position.
+ * Null when the cursor is not over any plane.
+ */
+export const livePlanesHoveredAtom = atom<{
+  plane: Plane;
+  x: number;
+  y: number;
+} | null>(null);
+
+/**
+ * planesPollIntervalAtom
+ * Controls how often (in seconds) the live planes data is refreshed.
+ * Range: 10–300 seconds. Default: 90 seconds.
+ */
+export const planesPollIntervalAtom = atom(90);
+
+/**
+ * planesRefreshTriggerAtom
+ * Incrementing this atom causes LivePlanesLayer to immediately fetch fresh
+ * data and reset its polling interval. Write-only from UI components.
+ */
+export const planesRefreshTriggerAtom = atom(0);
+
+/**
+ * planesFetchStatusAtom
+ * Reflects the result of the most recent fetch attempt.
+ * 'ok'           — last fetch succeeded
+ * 'rate-limited' — last fetch was rejected with HTTP 429
+ * 'error'        — last fetch failed for another reason
+ */
+export const planesFetchStatusAtom = atom<'ok' | 'rate-limited' | 'error' | null>(null);

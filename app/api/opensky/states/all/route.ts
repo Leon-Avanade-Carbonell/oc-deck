@@ -38,8 +38,8 @@ export async function GET() {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        // Allow browser to cache for up to 90 s (matches our poll interval)
-        'Cache-Control': 'public, max-age=90',
+        // No caching — the layer controls its own poll interval
+        'Cache-Control': 'no-store',
       },
     });
   } catch (error) {
