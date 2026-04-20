@@ -1,0 +1,22 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index 3f4611a19641de88c21ba505b4dc1155ad3e199d..fac7ee16a4417277dcb0e2f0cfb8c804c3d15eaf 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -2089,6 +2089,8 @@ var _CanvasSurface = class {
+     return [this.drawingBufferWidth, this.drawingBufferHeight];
+   }
+   getMaxDrawingBufferSize() {
++    // Guard: device may not be initialized yet when ResizeObserver fires early
++    if (!this.device) return [Infinity, Infinity];
+     const maxTextureDimension = this.device.limits.maxTextureDimension2D;
+     return [maxTextureDimension, maxTextureDimension];
+   }
+@@ -2181,6 +2183,8 @@ var _CanvasSurface = class {
+   }
+   _handleResize(entries) {
+     var _a, _b, _c, _d, _e;
++    // Guard: device may not be initialized yet when ResizeObserver fires early
++    if (!this.device) return;
+     if (this.destroyed) {
+       return;
+     }

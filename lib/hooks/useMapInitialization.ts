@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 import { useSetAtom } from 'jotai';
-import { mapInstanceAtom, mapZoomAtom } from '@/lib/atoms/map';
+import { mapInstanceAtom, mapZoomAtom, mapBearingAtom } from '@/lib/atoms/map';
 
 /**
  * Writes the underlying MapLibre GL map instance to `mapInstanceAtom` when the
@@ -32,6 +32,7 @@ export function useMapInitialization(): void {
   const { current: mapRef } = useMap();
   const setMapInstance = useSetAtom(mapInstanceAtom);
   const setMapZoom = useSetAtom(mapZoomAtom);
+  const setMapBearing = useSetAtom(mapBearingAtom);
 
   useEffect(() => {
     if (!mapRef) return;
@@ -39,19 +40,27 @@ export function useMapInitialization(): void {
     const mapInstance = mapRef.getMap();
     setMapInstance(mapInstance);
 
-    // Sync initial zoom
+    // Sync initial zoom and bearing
     setMapZoom(mapInstance.getZoom());
+    setMapBearing(mapInstance.getBearing());
 
     // Listen for zoom changes
     const handleZoom = () => {
       setMapZoom(mapInstance.getZoom());
     };
 
+    // Listen for bearing changes (rotate)
+    const handleRotate = () => {
+      setMapBearing(mapInstance.getBearing());
+    };
+
     mapInstance.on('zoom', handleZoom);
+    mapInstance.on('rotate', handleRotate);
 
     return () => {
       mapInstance.off('zoom', handleZoom);
+      mapInstance.off('rotate', handleRotate);
       setMapInstance(null);
     };
-  }, [mapRef, setMapInstance, setMapZoom]);
+  }, [mapRef, setMapInstance, setMapZoom, setMapBearing]);
 }

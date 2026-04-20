@@ -2,14 +2,13 @@
 
 import dynamic from 'next/dynamic';
 
-// Skip SSR — MapLibre GL uses browser APIs (WebGL, ResizeObserver, window.devicePixelRatio)
-// that are not available during server-side rendering.
-const BaseMap3D = dynamic(() => import('@/components/map/BaseMap3D').then((m) => m.BaseMap3D), { ssr: false });
+// Skip SSR — DeckGL requires WebGL which is only available in the browser.
+const Globe3DMap = dynamic(() => import('@/components/map/Globe3DMap').then((m) => m.Globe3DMap), { ssr: false });
 
 export default function Map3DPage() {
   return (
     <main className="relative flex-1 min-h-0 overflow-hidden w-full">
-      <BaseMap3D />
+      <Globe3DMap />
     </main>
   );
 }

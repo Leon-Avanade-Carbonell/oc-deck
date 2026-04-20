@@ -53,6 +53,13 @@ export const basemapAtom = atom<BasemapId>(DEFAULT_BASEMAP);
 export const currentLocationAtom = atom<[number, number] | null>(null);
 
 /**
+ * Current map bearing in degrees (rotation clockwise from north).
+ * Synced continuously from the MapLibre map instance via `useMapInitialization`.
+ * Used by layers that need to orient icons correctly when the map is rotated.
+ */
+export const mapBearingAtom = atom<number>(0);
+
+/**
  * When true, scroll zoom and pinch-to-zoom are disabled on the map.
  * Written by layers that are actively decoding data — prevents zoom changes
  * from triggering additional fetches while a decode is already in flight.
